@@ -98,9 +98,10 @@
   position: relative;
   display: grid;
   min-height: 100%;
-  place-items: center;
+  place-items: start center;
   overflow: hidden;
   perspective: 1200px;
+  padding-top: clamp(104px, 18vh, 132px);
 }
 
 .iso-stage::before {
@@ -119,15 +120,15 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(132px, 176px));
-  gap: 34px 42px;
-  transform: rotateX(58deg) rotateZ(45deg);
+  grid-template-columns: repeat(2, minmax(110px, 152px));
+  gap: 28px 34px;
+  transform: rotateX(58deg) rotateZ(45deg) scale(.86);
   transform-style: preserve-3d;
 }
 
 .iso-block {
   position: relative;
-  width: clamp(132px, 14vw, 176px);
+  width: clamp(110px, 12vw, 152px);
   aspect-ratio: 1;
   transform-style: preserve-3d;
 }
