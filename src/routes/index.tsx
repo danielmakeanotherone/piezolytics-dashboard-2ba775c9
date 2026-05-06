@@ -5,7 +5,7 @@ import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -63,11 +63,25 @@ function Wave({ data }: { data: number[] }) {
 
 function Dashboard() {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData();
+  const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
 
   const peakPct = stats.total ? Math.round((stats.maxCount / stats.total) * 100) : 0;
   const lastEvent = events.length ? [...events].sort((a, b) => b.epoch - a.epoch)[0] : null;
+
+  useEffect(() => {
+    const updateTimeLabels = () => {
+      const now = new Date();
+      setTimeLabels({
+        today: `Today · ${now.toLocaleDateString([], { month: "short", day: "numeric" })}`,
+        clock: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }),
+      });
+    };
+    updateTimeLabels();
+    const id = window.setInterval(updateTimeLabels, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -95,12 +109,12 @@ function Dashboard() {
                 className="text-[11px] px-3 py-1.5 rounded-lg"
                 style={{ background: "var(--surf2)", color: "var(--text2)", border: "1px solid var(--bord2)" }}
               >
-                Today · {new Date().toLocaleDateString([], { month: "short", day: "numeric" })}
+                {timeLabels.today}
               </div>
             </div>
             <div className="px-7 pt-1 pb-2 text-text3 text-[12px] flex items-center gap-4">
               <span>⌖ 4-zone grid · 2×2</span>
-              <span>{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}</span>
+              <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
               <IsoHeatmap stats={stats} />
