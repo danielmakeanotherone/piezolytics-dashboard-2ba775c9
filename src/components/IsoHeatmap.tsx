@@ -14,7 +14,7 @@ export function IsoHeatmap({ stats }: Props) {
         {ZONE_ORDER.map((zone, index) => {
           const count = stats.counts[zone];
           const norm = count / maxCount;
-          const height = 42 + norm * 126;
+          const height = 34 + norm * 104;
           return (
             <div
               key={zone}
