@@ -214,8 +214,8 @@ export function IsoHeatmap({ stats }: Props) {
   }, [stats.counts.entrance, stats.counts.aisle_a, stats.counts.checkout, stats.counts.aisle_b, stats.maxCount]);
 
   return (
-    <div ref={wrapRef} className="w-full h-full" style={{ padding: 16 }}>
-      <canvas ref={canvasRef} />
+    <div ref={wrapRef} className="w-full h-full" style={{ padding: 16, overflow: "hidden", minWidth: 0, minHeight: 0 }}>
+      <canvas ref={canvasRef} style={{ display: "block" }} />
     </div>
   );
 }

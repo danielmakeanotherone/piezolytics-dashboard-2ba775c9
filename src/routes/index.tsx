@@ -58,7 +58,7 @@ function Wave({ data }: { data: number[] }) {
     ctx.lineWidth = 2;
     ctx.stroke();
   }, [data]);
-  return <div ref={wrap} style={{ width: "100%", height: 110 }}><canvas ref={ref} /></div>;
+  return <div ref={wrap} style={{ width: "100%", height: 110, overflow: "hidden" }}><canvas ref={ref} style={{ display: "block" }} /></div>;
 }
 
 function Dashboard() {
