@@ -5,7 +5,7 @@ import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -18,8 +18,10 @@ function Wave({ data }: { data: number[] }) {
     const c = ref.current, w = wrap.current;
     if (!c || !w) return;
     const dpr = window.devicePixelRatio || 1;
-    const W = w.clientWidth, H = 110;
-    c.width = W * dpr; c.height = H * dpr;
+    const W = Math.max(1, Math.floor(w.clientWidth)), H = 110;
+    const pixelW = Math.floor(W * dpr), pixelH = Math.floor(H * dpr);
+    if (c.width !== pixelW) c.width = pixelW;
+    if (c.height !== pixelH) c.height = pixelH;
     c.style.width = `${W}px`; c.style.height = `${H}px`;
     const ctx = c.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -63,11 +65,25 @@ function Wave({ data }: { data: number[] }) {
 
 function Dashboard() {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData();
+  const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
 
   const peakPct = stats.total ? Math.round((stats.maxCount / stats.total) * 100) : 0;
   const lastEvent = events.length ? [...events].sort((a, b) => b.epoch - a.epoch)[0] : null;
+
+  useEffect(() => {
+    const updateTimeLabels = () => {
+      const now = new Date();
+      setTimeLabels({
+        today: `Today · ${now.toLocaleDateString([], { month: "short", day: "numeric" })}`,
+        clock: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }),
+      });
+    };
+    updateTimeLabels();
+    const id = window.setInterval(updateTimeLabels, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -75,9 +91,9 @@ function Dashboard() {
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
         <HeroStats stats={stats} />
 
-        <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 340px" }}>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           {/* Left: Heatmap panel */}
-          <section className="panel flex flex-col" style={{ minHeight: 620 }}>
+          <section className="panel flex min-w-0 flex-col" style={{ minHeight: 560 }}>
             <div className="px-7 pt-6 pb-1 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
@@ -95,12 +111,12 @@ function Dashboard() {
                 className="text-[11px] px-3 py-1.5 rounded-lg"
                 style={{ background: "var(--surf2)", color: "var(--text2)", border: "1px solid var(--bord2)" }}
               >
-                Today · {new Date().toLocaleDateString([], { month: "short", day: "numeric" })}
+                {timeLabels.today}
               </div>
             </div>
             <div className="px-7 pt-1 pb-2 text-text3 text-[12px] flex items-center gap-4">
               <span>⌖ 4-zone grid · 2×2</span>
-              <span>{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}</span>
+              <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
               <IsoHeatmap stats={stats} />
@@ -108,7 +124,7 @@ function Dashboard() {
           </section>
 
           {/* Right: stacked cards */}
-          <aside className="flex flex-col gap-5">
+          <aside className="flex min-w-0 flex-col gap-5">
             {/* Traffic intensity */}
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">

@@ -18,7 +18,7 @@ const tabs = [
 
 function pillLabel(conn: ConnState, lastUpdate: number | null) {
   if (conn === "offline") return "offline";
-  const t = lastUpdate ? new Date(lastUpdate).toLocaleTimeString([], { hour12: false }) : "--:--:--";
+  const t = lastUpdate ? new Date(lastUpdate).toISOString().slice(11, 19) : "--:--:--";
   return `${conn} · ${t}`;
 }
 

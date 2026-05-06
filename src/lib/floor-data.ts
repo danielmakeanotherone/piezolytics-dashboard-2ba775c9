@@ -137,6 +137,5 @@ export function bucketSparkline(events: FloorEvent[], buckets = 24, windowMs = 6
 }
 
 export function formatTime(epoch: number): string {
-  const d = new Date(epoch);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  return new Date(epoch).toISOString().slice(11, 19);
 }
