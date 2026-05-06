@@ -38,8 +38,8 @@ export function Sparkline({ data, height = 44 }: { data: number[]; height?: numb
   }, [data, height]);
 
   return (
-    <div ref={wrapRef} style={{ width: "100%", height }}>
-      <canvas ref={ref} />
+    <div ref={wrapRef} style={{ width: "100%", height, overflow: "hidden" }}>
+      <canvas ref={ref} style={{ display: "block" }} />
     </div>
   );
 }
