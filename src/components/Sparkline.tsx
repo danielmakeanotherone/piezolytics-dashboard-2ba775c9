@@ -9,10 +9,12 @@ export function Sparkline({ data, height = 44 }: { data: number[]; height?: numb
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
     const dpr = window.devicePixelRatio || 1;
-    const W = wrap.clientWidth;
+    const W = Math.max(1, Math.floor(wrap.clientWidth));
     const H = height;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
+    const pixelW = Math.floor(W * dpr);
+    const pixelH = Math.floor(H * dpr);
+    if (canvas.width !== pixelW) canvas.width = pixelW;
+    if (canvas.height !== pixelH) canvas.height = pixelH;
     canvas.style.width = `${W}px`;
     canvas.style.height = `${H}px`;
     const ctx = canvas.getContext("2d")!;
