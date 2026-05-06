@@ -1,4 +1,5 @@
 import { ZONE_LABELS, ZONE_ORDER, type Stats } from "@/lib/floor-data";
+import type { CSSProperties } from "react";
 
 interface Props {
   stats: Stats;
@@ -23,7 +24,7 @@ export function IsoHeatmap({ stats }: Props) {
                   "--h": `${height}px`,
                   "--heat": norm.toFixed(3),
                   "--delay": `${index * 80}ms`,
-                } as React.CSSProperties
+                } as CSSProperties
               }
             >
               <div className="iso-column" aria-hidden="true">
