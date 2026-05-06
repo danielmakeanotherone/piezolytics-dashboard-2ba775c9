@@ -18,8 +18,10 @@ function Wave({ data }: { data: number[] }) {
     const c = ref.current, w = wrap.current;
     if (!c || !w) return;
     const dpr = window.devicePixelRatio || 1;
-    const W = w.clientWidth, H = 110;
-    c.width = W * dpr; c.height = H * dpr;
+    const W = Math.max(1, Math.floor(w.clientWidth)), H = 110;
+    const pixelW = Math.floor(W * dpr), pixelH = Math.floor(H * dpr);
+    if (c.width !== pixelW) c.width = pixelW;
+    if (c.height !== pixelH) c.height = pixelH;
     c.style.width = `${W}px`; c.style.height = `${H}px`;
     const ctx = c.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
