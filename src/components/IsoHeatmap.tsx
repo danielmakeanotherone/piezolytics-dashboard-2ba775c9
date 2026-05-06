@@ -21,17 +21,19 @@ export function IsoHeatmap({ stats }: Props) {
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
     const dpr = window.devicePixelRatio || 1;
-    const W = wrap.clientWidth;
-    const H = wrap.clientHeight;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
+    const W = Math.max(1, Math.floor(wrap.clientWidth));
+    const H = Math.max(1, Math.floor(wrap.clientHeight));
+    const pixelW = Math.floor(W * dpr);
+    const pixelH = Math.floor(H * dpr);
+    if (canvas.width !== pixelW) canvas.width = pixelW;
+    if (canvas.height !== pixelH) canvas.height = pixelH;
     canvas.style.width = `${W}px`;
     canvas.style.height = `${H}px`;
     const ctx = canvas.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
 
-    const TW = Math.min(W * 0.2, 92);
+    const TW = Math.min(W * 0.18, 92);
     const TD = TW * 0.5;
     const ox = W / 2;
     const oy = H * 0.52;
