@@ -89,9 +89,9 @@ function Dashboard() {
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
         <HeroStats stats={stats} />
 
-        <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 340px" }}>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           {/* Left: Heatmap panel */}
-          <section className="panel flex flex-col" style={{ minHeight: 620 }}>
+          <section className="panel flex min-w-0 flex-col" style={{ minHeight: 620 }}>
             <div className="px-7 pt-6 pb-1 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
@@ -122,7 +122,7 @@ function Dashboard() {
           </section>
 
           {/* Right: stacked cards */}
-          <aside className="flex flex-col gap-5">
+          <aside className="flex min-w-0 flex-col gap-5">
             {/* Traffic intensity */}
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
