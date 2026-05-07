@@ -85,9 +85,8 @@ export function IsoHeatmap({ stats }: Props) {
     };
   }, []);
 
-  // Compute uniform top/bottom strip Y positions based on cluster bbox
-  const topY = anchors.length ? Math.min(...anchors.map(a => a.y)) - LINE_LENGTH : 0;
-  const bottomY = anchors.length ? Math.max(...anchors.map(a => a.y)) + LINE_LENGTH : 0;
+  // Determine which side of the dot the label sits on (away from tile)
+
 
   return (
     <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
@@ -170,27 +169,24 @@ export function IsoHeatmap({ stats }: Props) {
         height={stageSize.h}
         aria-hidden="true"
       >
-        {anchors.map((a) => {
-          const ly = a.side === "top" ? topY : bottomY;
-          return (
-            <g key={a.index} className="iso-leader">
-              <line x1={a.x} y1={ly} x2={a.x} y2={a.side === "top" ? a.y - 8 : a.y + 8} />
-              <circle cx={a.x} cy={ly} r={3.5} />
-            </g>
-          );
-        })}
+        {anchors.map((a) => (
+          <g key={a.index} className="iso-leader">
+            <line x1={a.sx} y1={a.sy} x2={a.dx} y2={a.dy} />
+            <circle cx={a.dx} cy={a.dy} r={4} />
+          </g>
+        ))}
       </svg>
 
       {anchors.map((a) => {
-        const ly = a.side === "top" ? topY : bottomY;
+        const labelLeft = a.dx < a.sx; // dot is to the left of tile -> label further left
         return (
           <div
             key={a.index}
             className="iso-tag iso-tag-leader"
-            data-side={a.side}
             style={{
-              left: a.x,
-              top: a.side === "top" ? ly - 14 : ly + 14,
+              left: a.dx,
+              top: a.dy,
+              transform: `translate(${labelLeft ? "calc(-100% - 10px)" : "10px"}, -50%)`,
             }}
           >
             <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
