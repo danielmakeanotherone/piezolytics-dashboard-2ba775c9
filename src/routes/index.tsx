@@ -47,16 +47,24 @@ function Landing() {
         </div>
       </header>
 
-      <section className="max-w-[1400px] mx-auto px-6 pt-10 pb-6 text-center">
-        <div className="text-[11px] uppercase tracking-[0.22em] text-text3 mb-3">Public preview · simulated stream</div>
-        <h1 className="font-display" style={{ fontSize: 44, fontWeight: 600, letterSpacing: -0.5 }}>
+      <section
+        className="max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center justify-center"
+        style={{ minHeight: "calc(100vh - 58px)" }}
+      >
+        <div className="text-[11px] uppercase tracking-[0.22em] text-text3 mb-3">
+          Public preview · simulated stream
+        </div>
+        <h1
+          className="font-display"
+          style={{ fontSize: 64, fontWeight: 600, letterSpacing: -0.8, lineHeight: 1.05 }}
+        >
           See your floor come alive.
         </h1>
-        <p className="text-text2 mt-3 max-w-2xl mx-auto" style={{ fontSize: 15 }}>
+        <p className="text-text2 mt-4 max-w-2xl mx-auto" style={{ fontSize: 16 }}>
           A glimpse of the Piezolytics dashboard with random demo data.
           Sign up to connect your ESP32 and watch your real tiles light up.
         </p>
-        <div className="mt-5 flex items-center justify-center gap-2">
+        <div className="mt-7 flex items-center justify-center gap-3">
           <Link
             to="/auth"
             search={{ mode: "signup" }}
@@ -66,18 +74,26 @@ function Landing() {
             Create your dashboard
           </Link>
           <Link
-            to="/auth"
-            search={{ mode: "login" }}
+            to="/dashboard"
             className="px-5 py-2.5 rounded-lg text-sm"
             style={{ border: "1px solid var(--bord2)", color: "var(--text2)" }}
           >
-            I already have an account
+            Go to Dashboard
           </Link>
         </div>
+        <a
+          href="#demo"
+          className="mt-16 flex flex-col items-center gap-2 text-text3 hover:text-text2 transition-colors"
+        >
+          <span className="text-[11px] uppercase tracking-[0.22em]">Scroll down for demo</span>
+          <span style={{ fontSize: 18, animation: "bounce 1.8s ease-in-out infinite" }}>↓</span>
+        </a>
       </section>
 
       {/* Demo dashboard preview (random data) */}
-      <Dashboard demo hideNav />
+      <div id="demo" style={{ scrollMarginTop: 58 }}>
+        <Dashboard demo hideNav />
+      </div>
     </div>
   );
 }
