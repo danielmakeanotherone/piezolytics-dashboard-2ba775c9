@@ -18,11 +18,11 @@ const CALLOUTS: Array<{
   ey: number;
   side: "left" | "right";
 }> = [
-  // Dots sit at a consistent diagonal offset outside each tile
-  { i: 0, sx: 28, sy: 28, ex: 14, ey: 22, side: "left" },
-  { i: 1, sx: 72, sy: 28, ex: 92, ey: 32, side: "right" },
-  { i: 2, sx: 28, sy: 56, ex: 8, ey: 52, side: "left" },
-  { i: 3, sx: 72, sy: 56, ex: 88, ey: 60, side: "right" },
+  // Dots sit at a consistent diagonal offset just outside each tile corner
+  { i: 0, sx: 36, sy: 56, ex: 14, ey: 50, side: "left" },
+  { i: 1, sx: 64, sy: 56, ex: 86, ey: 50, side: "right" },
+  { i: 2, sx: 36, sy: 84, ex: 14, ey: 90, side: "left" },
+  { i: 3, sx: 64, sy: 84, ex: 86, ey: 90, side: "right" },
 ];
 
 export function IsoHeatmap({ stats }: Props) {
