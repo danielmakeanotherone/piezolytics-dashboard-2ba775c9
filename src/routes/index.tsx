@@ -81,13 +81,17 @@ function Landing() {
             Go to Dashboard
           </Link>
         </div>
-        <a
-          href="#demo"
-          className="mt-28 flex flex-col items-center gap-2 text-text3 hover:text-text2 transition-colors"
+        <button
+          type="button"
+          onClick={() => {
+            document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-text3 hover:text-text2 transition-colors bg-transparent border-0 cursor-pointer"
+          style={{ bottom: 28 }}
         >
           <span className="text-[11px] uppercase tracking-[0.22em]">Scroll down for demo</span>
           <span style={{ fontSize: 18, animation: "bounce 1.8s ease-in-out infinite" }}>↓</span>
-        </a>
+        </button>
       </section>
 
       {/* Demo dashboard preview (random data) */}
