@@ -66,24 +66,29 @@ export function IsoHeatmap({ stats }: Props) {
                     {(() => {
                       // Separate short arcs by row only. No end-to-end turnarounds or outer edge loops.
                       const cols = 8, rows = 2;
-                      const buildPath = (offset: number, arc: number) => {
+                      // Wires run along the top/bottom edges of each piezo row so the discs stay visible.
+                      // offsetSign: -1 = above row (red), +1 = below row (black). Connects every adjacent piezo.
+                      const buildPath = (offsetSign: number) => {
+                        const edge = 5.5; // distance from row center to wire baseline (just outside disc)
+                        const arc = 2.5;  // small parabola height
                         let d = "";
                         for (let r = 0; r < rows; r++) {
-                          const y = ((r + 0.5) / rows) * 100;
-                          for (let c = 1; c < cols - 2; c++) {
+                          const yCenter = ((r + 0.5) / rows) * 100;
+                          const yBase = yCenter + offsetSign * edge;
+                          for (let c = 0; c < cols - 1; c++) {
                             const x0 = ((c + 0.5) / cols) * 100;
                             const x1 = ((c + 1.5) / cols) * 100;
                             const mx = (x0 + x1) / 2;
-                            const cy = (y + offset) - arc;
-                            d += `M${x0.toFixed(2)},${(y + offset).toFixed(2)} Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y + offset).toFixed(2)} `;
+                            const cy = yBase + offsetSign * arc; // arc bulges away from piezo
+                            d += `M${x0.toFixed(2)},${yBase.toFixed(2)} Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${yBase.toFixed(2)} `;
                           }
                         }
                         return d;
                       };
                       return (
                         <>
-                          <path d={buildPath(-1.1, 2.2)} className="loom-wire loom-red" />
-                          <path d={buildPath(1.1, 2.2)} className="loom-wire loom-black" />
+                          <path d={buildPath(-1)} className="loom-wire loom-red" />
+                          <path d={buildPath(1)} className="loom-wire loom-black" />
                         </>
                       );
                     })()}
