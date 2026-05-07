@@ -62,7 +62,7 @@ export function IsoHeatmap({ stats }: Props) {
                       </span>
                     </div>
                   ))}
-                  <svg className="piezo-loom" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <svg className="piezo-loom" viewBox="6 8 88 84" preserveAspectRatio="none" aria-hidden="true">
                     {(() => {
                       // Separate short arcs by row only. No end-to-end turnarounds or outer edge loops.
                       const cols = 8, rows = 2;
