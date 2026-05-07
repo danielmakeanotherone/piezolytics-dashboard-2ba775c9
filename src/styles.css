@@ -102,7 +102,7 @@
   justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding: clamp(96px, 14vh, 120px) clamp(40px, 6vw, 80px);
+  padding: 24px;
 }
 
 .iso-leader-svg {
