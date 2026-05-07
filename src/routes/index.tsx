@@ -91,9 +91,9 @@ function Dashboard() {
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
         <HeroStats stats={stats} />
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
           {/* Left: Heatmap panel */}
-          <section className="panel flex min-w-0 flex-col h-full">
+          <section className="panel flex min-w-0 flex-col" style={{ minHeight: 560 }}>
             <div className="px-7 pt-6 pb-1 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
