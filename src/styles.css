@@ -159,8 +159,8 @@
 }
 
 .iso-top {
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--acc) calc(28% + var(--heat) * 66%), var(--surf3)), var(--surf2) 72%);
-  box-shadow: 0 0 calc(12px + var(--heat) * 34px) color-mix(in srgb, var(--acc) calc(var(--heat) * 38%), transparent);
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--acc) calc(42% + var(--heat) * 60%), var(--surf3)) 0%, color-mix(in srgb, var(--acc) calc(22% + var(--heat) * 40%), var(--surf2)) 60%, var(--surf2) 100%);
+  box-shadow: inset 0 0 calc(20px + var(--heat) * 30px) color-mix(in srgb, var(--acc) calc(28% + var(--heat) * 40%), transparent), 0 0 calc(12px + var(--heat) * 34px) color-mix(in srgb, var(--acc) calc(var(--heat) * 38%), transparent);
   transform: translateZ(var(--h));
 }
 
