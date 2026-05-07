@@ -1,5 +1,5 @@
 import { ZONE_ORDER, type Stats } from "@/lib/floor-data";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 interface Props {
   stats: Stats;
