@@ -48,7 +48,7 @@ function Landing() {
       </header>
 
       <section
-        className="max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center justify-center"
+        className="relative max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center justify-center"
         style={{ minHeight: "calc(100vh - 58px)" }}
       >
         <div className="text-[11px] uppercase tracking-[0.22em] text-text3 mb-3">
