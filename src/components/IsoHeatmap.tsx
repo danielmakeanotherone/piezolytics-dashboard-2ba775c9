@@ -1,11 +1,13 @@
-import { ZONE_ORDER, type Stats } from "@/lib/floor-data";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { ZONE_ORDER, ZONE_LABELS, type Stats, type SensorKey, type FloorEvent } from "@/lib/floor-data";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
 interface Props {
   stats: Stats;
+  events?: FloorEvent[];
 }
 
-export function IsoHeatmap({ stats }: Props) {
+export function IsoHeatmap({ stats, events = [] }: Props) {
+  const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
   useEffect(() => {
