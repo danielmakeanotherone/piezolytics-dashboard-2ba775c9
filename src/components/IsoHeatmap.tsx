@@ -64,32 +64,26 @@ export function IsoHeatmap({ stats }: Props) {
                   ))}
                   <svg className="piezo-loom" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                     {(() => {
-                      // Serpentine path through 8x2 grid (row 0 L→R, then row 1 R→L)
+                      // Separate short arcs by row only. No end-to-end turnarounds or outer edge loops.
                       const cols = 8, rows = 2;
-                      const pts: Array<[number, number]> = [];
-                      for (let r = 0; r < rows; r++) {
-                        for (let i = 0; i < cols; i++) {
-                          const c = r % 2 === 0 ? i : cols - 1 - i;
-                          pts.push([((c + 0.5) / cols) * 100, ((r + 0.5) / rows) * 100]);
-                        }
-                      }
                       const buildPath = (offset: number, arc: number) => {
                         let d = "";
-                        for (let i = 1; i < pts.length; i++) {
-                          const [x0, y0] = pts[i - 1];
-                          const [x1, y1] = pts[i];
-                          const sameRow = Math.abs(y0 - y1) < 0.01;
-                          if (!sameRow) continue; // skip end-of-row turnaround wires
-                          const mx = (x0 + x1) / 2;
-                          const cy = (y0 + offset) - arc;
-                          d += `M${x0.toFixed(2)},${(y0 + offset).toFixed(2)} Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)} `;
+                        for (let r = 0; r < rows; r++) {
+                          const y = ((r + 0.5) / rows) * 100;
+                          for (let c = 1; c < cols - 2; c++) {
+                            const x0 = ((c + 0.5) / cols) * 100;
+                            const x1 = ((c + 1.5) / cols) * 100;
+                            const mx = (x0 + x1) / 2;
+                            const cy = (y + offset) - arc;
+                            d += `M${x0.toFixed(2)},${(y + offset).toFixed(2)} Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y + offset).toFixed(2)} `;
+                          }
                         }
                         return d;
                       };
                       return (
                         <>
-                          <path d={buildPath(-2, 5)} className="loom-wire loom-red" />
-                          <path d={buildPath(2, 5)} className="loom-wire loom-black" />
+                          <path d={buildPath(-1.1, 2.2)} className="loom-wire loom-red" />
+                          <path d={buildPath(1.1, 2.2)} className="loom-wire loom-black" />
                         </>
                       );
                     })()}
