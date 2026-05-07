@@ -8,6 +8,7 @@ interface Props {
   lastUpdate: number | null;
   onRefresh: () => void;
   onClear: () => void;
+  onLogout?: () => void;
 }
 
 const tabs = [
