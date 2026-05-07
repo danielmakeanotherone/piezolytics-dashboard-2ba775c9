@@ -66,29 +66,38 @@ export function IsoHeatmap({ stats }: Props) {
                     {(() => {
                       // Separate short arcs by row only. No end-to-end turnarounds or outer edge loops.
                       const cols = 8, rows = 2;
-                      // Wires run along the top/bottom edges of each piezo row so the discs stay visible.
-                      // offsetSign: -1 = above row (red), +1 = below row (black). Connects every adjacent piezo.
-                      const buildPath = (offsetSign: number) => {
-                        const edge = 5.5; // distance from row center to wire baseline (just outside disc)
-                        const arc = 2.5;  // small parabola height
+                      // Both wires run along the bottom of each row. Each wire has a short
+                      // horizontal contact segment on every piezo, then arcs down between piezos.
+                      const buildPath = (laneOffset: number) => {
+                        const touchY = 4.2;   // contact line distance below row center (on disc edge)
+                        const arcDrop = 2.2;  // how far the loop dips below the contact line
+                        const contactHalf = 2.2; // half-width of the contact segment on each piezo
                         let d = "";
                         for (let r = 0; r < rows; r++) {
                           const yCenter = ((r + 0.5) / rows) * 100;
-                          const yBase = yCenter + offsetSign * edge;
-                          for (let c = 0; c < cols - 1; c++) {
-                            const x0 = ((c + 0.5) / cols) * 100;
-                            const x1 = ((c + 1.5) / cols) * 100;
-                            const mx = (x0 + x1) / 2;
-                            const cy = yBase + offsetSign * arc; // arc bulges away from piezo
-                            d += `M${x0.toFixed(2)},${yBase.toFixed(2)} Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${yBase.toFixed(2)} `;
+                          const yTouch = yCenter + touchY + laneOffset;
+                          for (let c = 0; c < cols; c++) {
+                            const xc = ((c + 0.5) / cols) * 100;
+                            const xL = xc - contactHalf;
+                            const xR = xc + contactHalf;
+                            // contact segment on this piezo
+                            d += `M${xL.toFixed(2)},${yTouch.toFixed(2)} L${xR.toFixed(2)},${yTouch.toFixed(2)} `;
+                            // arc to next piezo's left contact
+                            if (c < cols - 1) {
+                              const nextXc = ((c + 1.5) / cols) * 100;
+                              const nextL = nextXc - contactHalf;
+                              const mx = (xR + nextL) / 2;
+                              const my = yTouch + arcDrop;
+                              d += `M${xR.toFixed(2)},${yTouch.toFixed(2)} Q${mx.toFixed(2)},${my.toFixed(2)} ${nextL.toFixed(2)},${yTouch.toFixed(2)} `;
+                            }
                           }
                         }
                         return d;
                       };
                       return (
                         <>
-                          <path d={buildPath(-1)} className="loom-wire loom-red" />
-                          <path d={buildPath(1)} className="loom-wire loom-black" />
+                          <path d={buildPath(-0.9)} className="loom-wire loom-red" />
+                          <path d={buildPath(0.9)} className="loom-wire loom-black" />
                         </>
                       );
                     })()}
