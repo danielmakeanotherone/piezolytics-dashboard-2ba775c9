@@ -6,18 +6,15 @@ interface Props {
 }
 
 interface Anchor {
-  // tile edge point where the line starts
   sx: number;
   sy: number;
-  // dot/label point where the line ends
   dx: number;
   dy: number;
-  side: "top" | "bottom";
+  dir: "up" | "down" | "left" | "right";
   index: number;
 }
 
-const LEADER_LEN = 64; // uniform diagonal line length
-const ANGLE = Math.PI / 4; // 45 degrees, consistent for all
+const LEADER_LEN = 48; // uniform leader length for every tile
 
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
@@ -40,36 +37,40 @@ export function IsoHeatmap({ stats }: Props) {
           i,
           cx: r.left + r.width / 2 - sRect.left,
           cy: r.top + r.height / 2 - sRect.top,
-          left: r.left - sRect.left,
-          right: r.right - sRect.left,
-          top: r.top - sRect.top,
-          bottom: r.bottom - sRect.top,
         };
-      }).filter(Boolean) as Array<{ i: number; cx: number; cy: number; left: number; right: number; top: number; bottom: number }>;
+      }).filter(Boolean) as Array<{ i: number; cx: number; cy: number }>;
 
       if (tiles.length === 0) return;
 
-      const minY = Math.min(...tiles.map(t => t.cy));
-      const maxY = Math.max(...tiles.map(t => t.cy));
-      const midY = (minY + maxY) / 2;
-      const midX = tiles.reduce((s, t) => s + t.cx, 0) / tiles.length;
+      // In the iso-rotated 2x2 grid, tiles form a diamond. Find the
+      // extreme tile in each axial direction so each gets a unique side.
+      const top = tiles.reduce((a, b) => (b.cy < a.cy ? b : a));
+      const bottom = tiles.reduce((a, b) => (b.cy > a.cy ? b : a));
+      const left = tiles.reduce((a, b) => (b.cx < a.cx ? b : a));
+      const right = tiles.reduce((a, b) => (b.cx > a.cx ? b : a));
+
+      const dirByIndex = new Map<number, Anchor["dir"]>();
+      dirByIndex.set(top.i, "up");
+      dirByIndex.set(bottom.i, "down");
+      // left/right may collide with top/bottom if not yet assigned
+      if (!dirByIndex.has(left.i)) dirByIndex.set(left.i, "left");
+      if (!dirByIndex.has(right.i)) dirByIndex.set(right.i, "right");
+      // Fallback: assign remaining tiles by exclusion
+      const remainingDirs: Anchor["dir"][] = (["up", "down", "left", "right"] as const)
+        .filter(d => ![...dirByIndex.values()].includes(d));
+      tiles.forEach(t => {
+        if (!dirByIndex.has(t.i)) dirByIndex.set(t.i, remainingDirs.shift() || "up");
+      });
 
       const next: Anchor[] = tiles.map(t => {
-        const isTop = t.cy < midY;
-        const isLeft = t.cx < midX;
-        // Anchor at the outer corner of the tile (away from cluster center)
-        const sx = isLeft ? t.left + 8 : t.right - 8;
-        const sy = isTop ? t.top + 8 : t.bottom - 8;
-        // Dot extends diagonally outward at 45°, uniform length
-        const dirX = isLeft ? -1 : 1;
-        const dirY = isTop ? -1 : 1;
-        const dx = sx + dirX * Math.cos(ANGLE) * LEADER_LEN;
-        const dy = sy + dirY * Math.sin(ANGLE) * LEADER_LEN;
-        return {
-          sx, sy, dx, dy,
-          side: isTop ? "top" : "bottom",
-          index: t.i,
-        };
+        const dir = dirByIndex.get(t.i)!;
+        const tileHalf = 70; // approx half-size of tile bbox in stage coords
+        let sx = t.cx, sy = t.cy, dx = t.cx, dy = t.cy;
+        if (dir === "up")    { sy = t.cy - tileHalf; dy = sy - LEADER_LEN; }
+        if (dir === "down")  { sy = t.cy + tileHalf; dy = sy + LEADER_LEN; }
+        if (dir === "left")  { sx = t.cx - tileHalf; dx = sx - LEADER_LEN; }
+        if (dir === "right") { sx = t.cx + tileHalf; dx = sx + LEADER_LEN; }
+        return { sx, sy, dx, dy, dir, index: t.i };
       });
       setAnchors(next);
     };
@@ -84,8 +85,6 @@ export function IsoHeatmap({ stats }: Props) {
       window.removeEventListener("resize", measure);
     };
   }, []);
-
-  // Determine which side of the dot the label sits on (away from tile)
 
 
   return (
