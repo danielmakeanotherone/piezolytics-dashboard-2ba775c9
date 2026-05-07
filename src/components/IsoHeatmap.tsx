@@ -177,7 +177,12 @@ export function IsoHeatmap({ stats }: Props) {
       </svg>
 
       {anchors.map((a) => {
-        const labelLeft = a.dx < a.sx; // dot is to the left of tile -> label further left
+        // Place label adjacent to the dot, in the same axial direction as the leader
+        let tx = "-50%", ty = "-50%";
+        if (a.dir === "up")    ty = "calc(-100% - 8px)";
+        if (a.dir === "down")  ty = "8px";
+        if (a.dir === "left")  tx = "calc(-100% - 8px)";
+        if (a.dir === "right") tx = "8px";
         return (
           <div
             key={a.index}
@@ -185,7 +190,7 @@ export function IsoHeatmap({ stats }: Props) {
             style={{
               left: a.dx,
               top: a.dy,
-              transform: `translate(${labelLeft ? "calc(-100% - 10px)" : "10px"}, -50%)`,
+              transform: `translate(${tx}, ${ty})`,
             }}
           >
             <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
