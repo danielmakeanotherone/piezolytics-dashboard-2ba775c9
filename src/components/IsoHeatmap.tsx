@@ -18,14 +18,14 @@ const CALLOUTS: Array<{
   ey: number;
   side: "left" | "right";
 }> = [
-  // Tile 01 — entrance (top-left of grid -> renders top of diamond)
-  { i: 0, sx: 50, sy: 18, ex: 18, ey: 8, side: "left" },
+  // Tile 01 — entrance (top of diamond)
+  { i: 0, sx: 50, sy: 60, ex: 18, ey: 42, side: "left" },
   // Tile 02 — aisle_a (right of diamond)
-  { i: 1, sx: 72, sy: 38, ex: 92, ey: 22, side: "right" },
+  { i: 1, sx: 75, sy: 78, ex: 92, ey: 62, side: "right" },
   // Tile 03 — checkout (left of diamond)
-  { i: 2, sx: 28, sy: 60, ex: 8, ey: 78, side: "left" },
+  { i: 2, sx: 25, sy: 78, ex: 8, ey: 88, side: "left" },
   // Tile 04 — aisle_b (bottom of diamond)
-  { i: 3, sx: 50, sy: 80, ex: 86, ey: 90, side: "right" },
+  { i: 3, sx: 50, sy: 96, ex: 86, ey: 98, side: "right" },
 ];
 
 export function IsoHeatmap({ stats }: Props) {
