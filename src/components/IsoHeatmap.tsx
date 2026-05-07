@@ -94,7 +94,8 @@ export function IsoHeatmap({ stats }: Props) {
 
         const lineX = dotX + lineDir * lineDx;
         const lineY = clamp(dotY - lineDy, gutter + 16, stageRect.height - gutter - 16);
-        return { i: tile.i, dotX, dotY, lineX, lineY, tagX: lineX, tagY: lineY, side: "right" as const };
+        const side = lineDir === 1 ? "left" : "right";
+        return { i: tile.i, dotX, dotY, lineX, lineY, tagX: lineX, tagY: lineY, side };
       });
 
       setCallouts(next);
