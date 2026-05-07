@@ -55,12 +55,12 @@ export function IsoHeatmap({ stats }: Props) {
 
   // Callout direction per real tile (index order = ZONE_ORDER):
   const dirs: Array<[number, number]> = [
-    [-1, -0.55],
-    [1, -0.55],
-    [-1, 0.55],
-    [1, 0.55],
+    [-1, -0.25],
+    [1, -0.25],
+    [-1, 0.25],
+    [1, 0.25],
   ];
-  const LEADER = 150;
+  const LEADER = 280;
 
   return (
     <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
