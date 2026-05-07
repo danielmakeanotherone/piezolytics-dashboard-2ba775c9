@@ -18,11 +18,12 @@ const CALLOUTS: Array<{
   ey: number;
   side: "left" | "right";
 }> = [
-  // Dots sit at a consistent diagonal offset just outside each tile corner
-  { i: 0, sx: 36, sy: 56, ex: 14, ey: 50, side: "left" },
-  { i: 1, sx: 64, sy: 56, ex: 86, ey: 50, side: "right" },
-  { i: 2, sx: 36, sy: 84, ex: 14, ey: 90, side: "left" },
-  { i: 3, sx: 64, sy: 84, ex: 86, ey: 90, side: "right" },
+  // Diamond outer points (approx): top(50,38) right(78,66) bottom(50,95) left(22,66).
+  // Each dot sits ~8% beyond its tile's outer point; labels extend further out.
+  { i: 0, sx: 14, sy: 66, ex: 4, ey: 66, side: "left" },   // left tile
+  { i: 1, sx: 50, sy: 30, ex: 22, ey: 18, side: "left" },  // top tile
+  { i: 2, sx: 50, sy: 99, ex: 78, ey: 99, side: "right" }, // bottom tile
+  { i: 3, sx: 86, sy: 66, ex: 96, ey: 66, side: "right" }, // right tile
 ];
 
 export function IsoHeatmap({ stats }: Props) {
