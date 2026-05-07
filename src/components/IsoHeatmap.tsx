@@ -4,9 +4,10 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 interface Props {
   stats: Stats;
   events?: FloorEvent[];
+  connected?: boolean;
 }
 
-export function IsoHeatmap({ stats, events = [] }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
