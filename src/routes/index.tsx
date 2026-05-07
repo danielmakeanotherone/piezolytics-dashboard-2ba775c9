@@ -77,7 +77,7 @@ function Landing() {
       </section>
 
       {/* Demo dashboard preview (random data) */}
-      <Dashboard demo />
+      <Dashboard demo hideNav />
     </div>
   );
 }
