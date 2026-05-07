@@ -98,7 +98,7 @@ export function IsoHeatmap({ stats }: Props) {
         return { i: tile.i, dotX: tagX + tagWidth + lineDx, dotY: tagY - lineDy, lineX: tagX + tagWidth, lineY: tagY, tagX, tagY, side: "left" };
       };
 
-      const next = tiles.map((tile) => {
+      const next: CalloutLayout[] = tiles.map((tile) => {
         const where = placement.get(tile.i) ?? "left";
 
         if (where === "top") {
