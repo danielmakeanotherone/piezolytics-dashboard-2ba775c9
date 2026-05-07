@@ -98,11 +98,11 @@
   position: relative;
   display: grid;
   min-height: 100%;
-  align-content: center;
+  align-content: start;
   justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding: 24px;
+  padding: 16px 16px 0;
 }
 
 .iso-leader-svg {
@@ -141,12 +141,13 @@
   position: relative;
   z-index: 1;
   display: grid;
-  /* Active tiles use full size (190px); ghost tiles use a smaller cell so the
-     whole 6x6 fits inside the card without overflowing. */
-  grid-template-columns: 90px 90px 190px 190px 90px 90px;
-  grid-template-rows: 90px 90px 190px 190px 90px 90px;
-  gap: 18px;
-  transform: rotateX(58deg) rotateZ(45deg) scale(0.78);
+  /* All cells (active + ghost) are the same size so the outlines match the
+     real tiles. Six equal columns/rows in a 6x6 layout. */
+  grid-template-columns: repeat(6, 170px);
+  grid-template-rows: repeat(6, 170px);
+  gap: 14px;
+  transform: rotateX(58deg) rotateZ(45deg) scale(0.62);
+  transform-origin: top center;
   transform-style: preserve-3d;
 }
 
