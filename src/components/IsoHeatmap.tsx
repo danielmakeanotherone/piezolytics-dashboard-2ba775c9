@@ -196,6 +196,112 @@ export function IsoHeatmap({ stats, events = [] }: Props) {
           </div>
         );
       })}
+
+      <div className="iso-hint">Click a tile to view analytics</div>
+
+      {selected !== null && (
+        <TileDetail
+          index={selected}
+          zone={ZONE_ORDER[selected]}
+          stats={stats}
+          events={events}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TileDetail({
+  index,
+  zone,
+  stats,
+  events,
+  onClose,
+}: {
+  index: number;
+  zone: SensorKey;
+  stats: Stats;
+  events: FloorEvent[];
+  onClose: () => void;
+}) {
+  const count = stats.counts[zone];
+  const share = stats.total ? Math.round((count / stats.total) * 100) : 0;
+  const zoneEvents = useMemo(() => events.filter((e) => e.sensor === zone), [events, zone]);
+  const last = zoneEvents.length ? zoneEvents[zoneEvents.length - 1] : null;
+  const avgSignal = zoneEvents.length
+    ? Math.round(zoneEvents.reduce((s, e) => s + e.value, 0) / zoneEvents.length)
+    : 0;
+  const peakSignal = zoneEvents.length ? Math.max(...zoneEvents.map((e) => e.value)) : 0;
+  const recent = zoneEvents.slice(-15).reverse();
+
+  const buckets = 24;
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000;
+  const bins = new Array(buckets).fill(0);
+  for (const e of zoneEvents) {
+    if (now - e.epoch > windowMs) continue;
+    const i = Math.min(buckets - 1, Math.floor((e.epoch - (now - windowMs)) / (windowMs / buckets)));
+    bins[i]++;
+  }
+  const maxBin = Math.max(1, ...bins);
+
+  return (
+    <div className="iso-detail-overlay" onClick={onClose}>
+      <div className="iso-detail-card" onClick={(e) => e.stopPropagation()} role="dialog">
+        <button className="iso-detail-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="iso-detail-header">
+          <div>
+            <div className="iso-detail-eyebrow">Tile #{String(index + 1).padStart(2, "0")} · {ZONE_LABELS[zone]}</div>
+            <div className="iso-detail-title">{count} <span>events</span></div>
+          </div>
+          <div className="iso-detail-share">
+            <span>{share}%</span>
+            <small>of floor traffic</small>
+          </div>
+        </div>
+
+        <div className="iso-detail-grid">
+          <div className="iso-detail-stat">
+            <small>Avg signal</small>
+            <span>{avgSignal}</span>
+          </div>
+          <div className="iso-detail-stat">
+            <small>Peak signal</small>
+            <span>{peakSignal}</span>
+          </div>
+          <div className="iso-detail-stat">
+            <small>Last hit</small>
+            <span>{last ? new Date(last.epoch).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "—"}</span>
+          </div>
+          <div className="iso-detail-stat">
+            <small>Sensors</small>
+            <span>32 piezo</span>
+          </div>
+        </div>
+
+        <div className="iso-detail-section">
+          <div className="iso-detail-section-title">Last 60 minutes</div>
+          <div className="iso-detail-spark">
+            {bins.map((v, i) => (
+              <span key={i} style={{ height: `${(v / maxBin) * 100}%` }} />
+            ))}
+          </div>
+        </div>
+
+        <div className="iso-detail-section">
+          <div className="iso-detail-section-title">Recent events</div>
+          <ul className="iso-detail-events">
+            {recent.length === 0 && <li className="iso-detail-empty">No recent events</li>}
+            {recent.map((e, i) => (
+              <li key={i}>
+                <span className="time">{new Date(e.epoch).toLocaleTimeString([], { hour12: false })}</span>
+                <span className="sig">{e.value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
