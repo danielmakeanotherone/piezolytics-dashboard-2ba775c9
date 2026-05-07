@@ -8,13 +8,35 @@ interface Props {
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
 
+  // Ghost tile positions (column, row) in a 4x4 surrounding grid.
+  // Active 2x2 occupies the center: cols 2-3, rows 2-3.
+  const ghostCells: Array<[number, number]> = [];
+  for (let r = 1; r <= 4; r++) {
+    for (let c = 1; c <= 4; c++) {
+      const isActive = (c === 2 || c === 3) && (r === 2 || r === 3);
+      if (!isActive) ghostCells.push([c, r]);
+    }
+  }
+
   return (
     <div className="iso-stage" aria-label="Floor traffic heatmap">
-      <div className="iso-grid">
+      <div className="iso-grid iso-grid-4">
+        {ghostCells.map(([c, r]) => (
+          <div
+            key={`ghost-${c}-${r}`}
+            className="iso-block iso-block-ghost"
+            style={{ gridColumn: c, gridRow: r } as CSSProperties}
+            aria-hidden="true"
+          >
+            <div className="iso-ghost-top" />
+          </div>
+        ))}
         {ZONE_ORDER.map((zone, index) => {
           const count = stats.counts[zone];
           const norm = count / maxCount;
           const height = 34 + norm * 104;
+          const activePos: Array<[number, number]> = [[2,2],[3,2],[2,3],[3,3]];
+          const [gc, gr] = activePos[index];
           return (
             <div
               key={zone}
@@ -24,6 +46,8 @@ export function IsoHeatmap({ stats }: Props) {
                   "--h": `${height}px`,
                   "--heat": norm.toFixed(3),
                   "--delay": `${index * 80}ms`,
+                  gridColumn: gc,
+                  gridRow: gr,
                 } as CSSProperties
               }
             >
