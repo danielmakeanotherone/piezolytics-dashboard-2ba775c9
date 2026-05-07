@@ -55,7 +55,7 @@ export function IsoHeatmap({ stats }: Props) {
                 <div className="iso-left" />
                 <div className="iso-right" />
                 <div className="iso-piezos">
-                  {Array.from({ length: 16 }).map((_, p) => (
+                  {Array.from({ length: 24 }).map((_, p) => (
                     <div key={p} className="piezo">
                       <span className="piezo-disc">
                         <span className="piezo-dot" />
@@ -65,7 +65,7 @@ export function IsoHeatmap({ stats }: Props) {
                   <svg className="piezo-loom" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                     {(() => {
                       // Separate short arcs by row only. No end-to-end turnarounds or outer edge loops.
-                      const cols = 8, rows = 2;
+                      const cols = 12, rows = 2;
                       // Both wires run along the bottom of each row. Each wire has a short
                       // horizontal contact segment on every piezo, then arcs down between piezos.
                       const buildPath = (laneOffset: number) => {
