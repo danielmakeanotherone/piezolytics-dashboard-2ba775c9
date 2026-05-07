@@ -95,7 +95,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                   style={{ background: "var(--surf2)", color: "var(--text2)", border: "1px solid var(--bord2)" }}
                 >
                   <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: 999, background: connected ? "var(--acc)" : "var(--text4)" }} />
-                  {conn === "demo" ? "Demo stream" : conn === "live" ? "ESP32 connected" : "Awaiting ESP32"}
+                  {conn === "demo" ? "Demo stream" : conn === "live" ? "Connected" : "Awaiting Connection"}
                 </span>
               </div>
               <div

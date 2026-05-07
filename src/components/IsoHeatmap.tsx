@@ -69,7 +69,7 @@ export function IsoHeatmap({ stats, events = [], connected = true }: Props) {
       {!connected && (
         <div className="iso-awaiting">
           <span className="iso-awaiting-dot" />
-          Waiting for ESP32 connection…
+          Waiting for Connection…
         </div>
       )}
       <div className="iso-grid iso-grid-4">
