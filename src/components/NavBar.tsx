@@ -12,7 +12,7 @@ interface Props {
 }
 
 const tabs = [
-  { to: "/", label: "Dashboard" },
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/zones", label: "Zones" },
   { to: "/history", label: "History" },
 ] as const;
