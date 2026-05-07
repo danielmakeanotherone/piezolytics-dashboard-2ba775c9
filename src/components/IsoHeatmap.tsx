@@ -62,8 +62,8 @@ export function IsoHeatmap({ stats }: Props) {
         [rightTile.i, "right"],
       ]);
 
-      const margin = 28;
-      const lineLength = 74;
+      const margin = 34;
+      const lineLength = 78;
       const lineAngle = 30 * (Math.PI / 180);
       const lineDx = Math.cos(lineAngle) * lineLength;
       const lineDy = Math.sin(lineAngle) * lineLength;
@@ -85,32 +85,35 @@ export function IsoHeatmap({ stats }: Props) {
         let dotX: number;
         let dotY: number;
         let lineDir: 1 | -1 = 1;
+        let lineYDir: 1 | -1 = -1;
 
         if (where === "top") {
           dotX = tile.cx;
           dotY = bbox.top - margin;
-          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? 1 : -1;
+          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? -1 : 1;
+          lineYDir = -1;
         } else if (where === "bottom") {
           dotX = tile.cx;
           dotY = bbox.bottom + margin;
-          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? 1 : -1;
+          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? -1 : 1;
+          lineYDir = 1;
         } else if (where === "right") {
           dotX = bbox.right + margin;
           dotY = tile.cy;
-          lineDir = -1;
+          lineDir = 1;
+          lineYDir = -1;
         } else {
           dotX = bbox.left - margin;
           dotY = tile.cy;
-          lineDir = 1;
+          lineDir = -1;
+          lineYDir = -1;
         }
 
         dotX = clamp(dotX, gutter, stageRect.width - gutter);
         dotY = clamp(dotY, gutter, stageRect.height - gutter);
-        if (dotX + lineDir * lineDx < 96) lineDir = 1;
-        if (dotX + lineDir * lineDx > stageRect.width - gutter) lineDir = -1;
 
-        const lineX = dotX + lineDir * lineDx;
-        const lineY = clamp(dotY - lineDy, gutter + 16, stageRect.height - gutter - 16);
+        const lineX = clamp(dotX + lineDir * lineDx, gutter, stageRect.width - gutter);
+        const lineY = clamp(dotY + lineYDir * lineDy, gutter + 16, stageRect.height - gutter - 16);
         const side: "left" | "right" = lineDir === 1 ? "left" : "right";
         return { i: tile.i, dotX, dotY, lineX, lineY, tagX: lineX, tagY: lineY, side };
       });
