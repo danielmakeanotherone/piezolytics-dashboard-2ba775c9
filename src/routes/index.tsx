@@ -60,8 +60,8 @@ function Landing() {
         >
           See your floor come alive.
         </h1>
-        <p className="text-text3 text-sm mt-3 max-w-2xl mx-auto">
-          Turning Footsteps into Real Data.
+        <p className="text-[11px] uppercase tracking-[0.22em] text-text3 mt-4">
+          Turning Footsteps into Real Data
         </p>
         <div className="mt-7 flex items-center justify-center gap-3">
           <Link
@@ -73,7 +73,8 @@ function Landing() {
             Create your dashboard
           </Link>
           <Link
-            to="/dashboard"
+            to="/auth"
+            search={{ mode: "login" }}
             className="px-5 py-2.5 rounded-lg text-sm"
             style={{ border: "1px solid var(--bord2)", color: "var(--text2)" }}
           >
@@ -82,7 +83,7 @@ function Landing() {
         </div>
         <a
           href="#demo"
-          className="mt-16 flex flex-col items-center gap-2 text-text3 hover:text-text2 transition-colors"
+          className="mt-28 flex flex-col items-center gap-2 text-text3 hover:text-text2 transition-colors"
         >
           <span className="text-[11px] uppercase tracking-[0.22em]">Scroll down for demo</span>
           <span style={{ fontSize: 18, animation: "bounce 1.8s ease-in-out infinite" }}>↓</span>
