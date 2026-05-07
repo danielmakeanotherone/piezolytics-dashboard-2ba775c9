@@ -61,8 +61,7 @@ function Landing() {
           See your floor come alive.
         </h1>
         <p className="text-text2 mt-4 max-w-2xl mx-auto" style={{ fontSize: 16 }}>
-          A glimpse of the Piezolytics dashboard with random demo data.
-          Sign up to connect your ESP32 and watch your real tiles light up.
+          Turning Footsteps into Real Data.
         </p>
         <div className="mt-7 flex items-center justify-center gap-3">
           <Link
