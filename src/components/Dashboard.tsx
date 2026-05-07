@@ -99,10 +99,10 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 </span>
               </div>
               <div
-                className="text-[11px] px-3 py-1.5 rounded-lg"
-                style={{ background: "var(--surf2)", color: "var(--text2)", border: "1px solid var(--bord2)" }}
+                className="text-[10px] uppercase tracking-[0.14em] px-3 py-1.5 rounded-full"
+                style={{ background: "var(--surf2)", color: "var(--text3)", border: "1px solid var(--bord2)" }}
               >
-                {timeLabels.today}
+                Click a tile to view analytics
               </div>
             </div>
             <div className="px-7 pt-1 pb-2 text-text3 text-[12px] flex items-center gap-4">
