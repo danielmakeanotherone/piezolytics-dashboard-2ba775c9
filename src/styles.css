@@ -140,7 +140,7 @@
 .iso-grid {
   position: absolute;
   left: 34px;
-  top: 78px;
+  top: -92px;
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, clamp(140px, 15vw, 190px));
