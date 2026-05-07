@@ -48,8 +48,8 @@ function Landing() {
       </header>
 
       <section
-        className="relative max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center justify-center"
-        style={{ minHeight: "calc(100vh - 58px)" }}
+        className="relative max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center"
+        style={{ minHeight: "calc(100vh - 58px)", paddingTop: "18vh" }}
       >
         <div className="text-[11px] uppercase tracking-[0.22em] text-text3 mb-3">
           Public preview · simulated stream
