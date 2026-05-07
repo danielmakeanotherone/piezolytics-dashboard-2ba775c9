@@ -76,6 +76,15 @@ export function NavBar({ conn, lastUpdate, onRefresh, onClear, onLogout }: Props
         >
           <Trash2 size={13} /> Clear
         </button>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-text2 hover:text-text hover:bg-surf2 transition-colors"
+            style={{ border: "1px solid var(--bord2)" }}
+          >
+            Log out
+          </button>
+        )}
       </div>
     </header>
   );
