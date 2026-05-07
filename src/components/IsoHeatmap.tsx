@@ -14,16 +14,15 @@ export function IsoHeatmap({ stats }: Props) {
   });
   const ghostPlaneHeight = Math.max(...activeHeights);
 
-  // Ghost tile positions (column, row) in an 8x8 surrounding grid.
-  // Active 2x2 occupies the center: cols 4-5, rows 4-5.
+  // Ghost tile positions (column, row) in a 4x4 surrounding grid.
+  // Active 2x2 occupies the center: cols 2-3, rows 2-3.
   const ghostCells: Array<[number, number]> = [];
-  for (let r = 1; r <= 8; r++) {
-    for (let c = 1; c <= 8; c++) {
-      const isActive = (c === 4 || c === 5) && (r === 4 || r === 5);
+  for (let r = 1; r <= 4; r++) {
+    for (let c = 1; c <= 4; c++) {
+      const isActive = (c === 2 || c === 3) && (r === 2 || r === 3);
       if (!isActive) ghostCells.push([c, r]);
     }
   }
-
 
   return (
     <div className="iso-stage" aria-label="Floor traffic heatmap">
@@ -42,7 +41,7 @@ export function IsoHeatmap({ stats }: Props) {
           const count = stats.counts[zone];
           const norm = count / maxCount;
           const height = activeHeights[index];
-          const activePos: Array<[number, number]> = [[4,4],[5,4],[4,5],[5,5]];
+          const activePos: Array<[number, number]> = [[2,2],[3,2],[2,3],[3,3]];
           const [gc, gr] = activePos[index];
           return (
             <div
