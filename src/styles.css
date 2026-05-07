@@ -149,8 +149,6 @@
   transform: translateX(-50%) rotateX(58deg) rotateZ(45deg) scale(0.95);
   transform-style: preserve-3d;
 }
-  transform-style: preserve-3d;
-}
 
 .iso-block-ghost {
   position: relative;
