@@ -2,15 +2,7 @@ import { ZONE_LABELS } from "@/lib/floor-data";
 import type { Stats } from "@/lib/floor-data";
 
 export function HeroStats({ stats }: { stats: Stats }) {
-  const cards = [
-    { label: "Total events", value: String(stats.total), color: "var(--acc)" },
-    { label: "Active zones", value: `${stats.activeZones}/4`, color: "var(--acc2)" },
-    {
-      label: "Peak zone",
-      value: stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—",
-      color: "var(--text)",
-    },
-  ];
+  const cards: { label: string; value: string; color: string }[] = [];
 
   return (
     <section className="flex items-end justify-between gap-8 py-8">
