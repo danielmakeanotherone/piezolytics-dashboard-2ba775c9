@@ -62,31 +62,46 @@ export function IsoHeatmap({ stats }: Props) {
         [rightTile.i, "right"],
       ]);
 
-      const margin = 38;
+      const margin = 28;
       const lineLength = 74;
       const lineAngle = 30 * (Math.PI / 180);
       const lineDx = Math.cos(lineAngle) * lineLength;
       const lineDy = Math.sin(lineAngle) * lineLength;
       const gutter = 12;
 
+      // Bounding box of all tiles, so callouts always sit outside the cluster.
+      const bbox = tiles.reduce(
+        (acc, t) => ({
+          left: Math.min(acc.left, t.left),
+          right: Math.max(acc.right, t.right),
+          top: Math.min(acc.top, t.top),
+          bottom: Math.max(acc.bottom, t.bottom),
+        }),
+        { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity },
+      );
+
       const next = tiles.map((tile) => {
         const where = placement.get(tile.i) ?? "left";
-        let dotX = tile.left - margin;
-        let dotY = tile.top + tile.height * 0.42;
-        let lineDir = 1;
+        let dotX: number;
+        let dotY: number;
+        let lineDir: 1 | -1 = 1;
 
         if (where === "top") {
-          dotX = tile.left + tile.width * 0.18;
-          dotY = tile.top - margin;
-          lineDir = -1;
-        } else if (where === "right") {
-          dotX = tile.right + margin;
-          dotY = tile.top + tile.height * 0.36;
-          lineDir = -1;
+          dotX = tile.cx;
+          dotY = bbox.top - margin;
+          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? 1 : -1;
         } else if (where === "bottom") {
-          dotX = tile.right + margin;
-          dotY = tile.top + tile.height * 0.58;
+          dotX = tile.cx;
+          dotY = bbox.bottom + margin;
+          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? 1 : -1;
+        } else if (where === "right") {
+          dotX = bbox.right + margin;
+          dotY = tile.cy;
           lineDir = -1;
+        } else {
+          dotX = bbox.left - margin;
+          dotY = tile.cy;
+          lineDir = 1;
         }
 
         dotX = clamp(dotX, gutter, stageRect.width - gutter);
