@@ -1,36 +1,127 @@
 import { ZONE_ORDER, type Stats } from "@/lib/floor-data";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 interface Props {
   stats: Stats;
 }
 
-// Anchor positions (percent of stage) for the callout label end-points.
-// Tuned to sit just outside each isometric tile.
-const CALLOUTS: Array<{
-  // tile index in ZONE_ORDER
+type CalloutLayout = {
   i: number;
-  // line start (on/near the tile top) in % of stage
-  sx: number;
-  sy: number;
-  // line end (label position) in % of stage
-  ex: number;
-  ey: number;
+  dotX: number;
+  dotY: number;
+  lineX: number;
+  lineY: number;
+  tagX: number;
+  tagY: number;
   side: "left" | "right";
-}> = [
-  // Diamond outer points (approx): top(50,38) right(78,66) bottom(50,95) left(22,66).
-  // Each dot sits ~8% beyond its tile's outer point; labels extend further out.
-  { i: 0, sx: 14, sy: 66, ex: 4, ey: 66, side: "left" },   // left tile
-  { i: 1, sx: 50, sy: 30, ex: 22, ey: 18, side: "left" },  // top tile
-  { i: 2, sx: 50, sy: 99, ex: 78, ey: 99, side: "right" }, // bottom tile
-  { i: 3, sx: 86, sy: 66, ex: 96, ey: 66, side: "right" }, // right tile
-];
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [callouts, setCallouts] = useState<CalloutLayout[]>([]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const updateCallouts = () => {
+      const stageRect = stage.getBoundingClientRect();
+      const tiles = ZONE_ORDER.map((_, i) => {
+        const el = blockRefs.current[i];
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        const left = rect.left - stageRect.left;
+        const top = rect.top - stageRect.top;
+        return {
+          i,
+          left,
+          top,
+          right: rect.right - stageRect.left,
+          bottom: rect.bottom - stageRect.top,
+          width: rect.width,
+          height: rect.height,
+          cx: left + rect.width / 2,
+          cy: top + rect.height / 2,
+        };
+      }).filter((tile): tile is NonNullable<typeof tile> => tile !== null);
+
+      if (tiles.length !== ZONE_ORDER.length) return;
+
+      const topTile = [...tiles].sort((a, b) => a.cy - b.cy)[0];
+      const bottomTile = [...tiles].sort((a, b) => b.cy - a.cy)[0];
+      const leftTile = [...tiles].sort((a, b) => a.cx - b.cx)[0];
+      const rightTile = [...tiles].sort((a, b) => b.cx - a.cx)[0];
+      const placement = new Map<number, "top" | "bottom" | "left" | "right">([
+        [topTile.i, "top"],
+        [bottomTile.i, "bottom"],
+        [leftTile.i, "left"],
+        [rightTile.i, "right"],
+      ]);
+
+      const margin = 16;
+      const tagWidth = 90;
+      const labelGap = 78;
+      const gutter = 12;
+
+      const next = tiles.map((tile) => {
+        const where = placement.get(tile.i) ?? "left";
+        let dotX = tile.left - margin;
+        let dotY = tile.top + tile.height * 0.42;
+        let side: "left" | "right" = "left";
+        let tagY = dotY - 34;
+
+        if (where === "top") {
+          dotX = tile.left + tile.width * 0.18;
+          dotY = tile.top - margin;
+          side = "left";
+          tagY = dotY - 42;
+        } else if (where === "right") {
+          dotX = tile.right + margin;
+          dotY = tile.top + tile.height * 0.36;
+          side = "right";
+          tagY = dotY - 28;
+        } else if (where === "bottom") {
+          dotX = tile.right + margin;
+          dotY = tile.top + tile.height * 0.58;
+          side = "right";
+          tagY = dotY - 26;
+        }
+
+        dotX = clamp(dotX, gutter, stageRect.width - gutter);
+        dotY = clamp(dotY, gutter, stageRect.height - gutter);
+        tagY = clamp(tagY, gutter + 16, stageRect.height - gutter - 16);
+
+        if (side === "left") {
+          const tagX = clamp(dotX - labelGap - tagWidth, gutter, stageRect.width - tagWidth - gutter);
+          return { i: tile.i, dotX, dotY, lineX: tagX + tagWidth, lineY: tagY, tagX, tagY, side };
+        }
+
+        const tagX = clamp(dotX + labelGap + tagWidth, tagWidth + gutter, stageRect.width - gutter);
+        return { i: tile.i, dotX, dotY, lineX: tagX - tagWidth, lineY: tagY, tagX, tagY, side };
+      });
+
+      setCallouts(next);
+    };
+
+    const frame = window.requestAnimationFrame(updateCallouts);
+    window.addEventListener("resize", updateCallouts);
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateCallouts) : null;
+    observer?.observe(stage);
+    blockRefs.current.forEach((block) => block && observer?.observe(block));
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateCallouts);
+      observer?.disconnect();
+    };
+  }, [maxCount]);
 
   return (
-    <div className="iso-stage" aria-label="Floor traffic heatmap">
+    <div ref={stageRef} className="iso-stage" aria-label="Floor traffic heatmap">
       <div className="iso-grid">
         {ZONE_ORDER.map((zone, index) => {
           const count = stats.counts[zone];
@@ -39,6 +130,9 @@ export function IsoHeatmap({ stats }: Props) {
           return (
             <div
               key={zone}
+              ref={(el) => {
+                blockRefs.current[index] = el;
+              }}
               className="iso-block"
               style={
                 {
