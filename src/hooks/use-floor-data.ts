@@ -10,7 +10,8 @@ import {
 
 export type ConnState = "live" | "demo" | "offline";
 
-export function useFloorData(intervalMs = 2000) {
+export function useFloorData(intervalMs = 2000, options: { demo?: boolean } = {}) {
+  const { demo = false } = options;
   const [events, setEvents] = useState<FloorEvent[]>([]);
   const [conn, setConn] = useState<ConnState>("offline");
   const [lastUpdate, setLastUpdate] = useState<number | null>(null);
@@ -24,13 +25,18 @@ export function useFloorData(intervalMs = 2000) {
       setConn("live");
       setLastUpdate(Date.now());
     } catch {
-      usingDemoRef.current = true;
-      const data = tickDemo();
-      setEvents(data);
-      setConn("demo");
-      setLastUpdate(Date.now());
+      if (demo) {
+        usingDemoRef.current = true;
+        const data = tickDemo();
+        setEvents(data);
+        setConn("demo");
+        setLastUpdate(Date.now());
+      } else {
+        usingDemoRef.current = false;
+        setConn("offline");
+      }
     }
-  }, []);
+  }, [demo]);
 
   useEffect(() => {
     poll();

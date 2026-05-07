@@ -4,9 +4,10 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 interface Props {
   stats: Stats;
   events?: FloorEvent[];
+  connected?: boolean;
 }
 
-export function IsoHeatmap({ stats, events = [] }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
@@ -64,7 +65,13 @@ export function IsoHeatmap({ stats, events = [] }: Props) {
   const LEADER = 95;
 
   return (
-    <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
+    <div className={connected ? "iso-stage" : "iso-stage iso-stage-idle"} ref={stageRef} aria-label="Floor traffic heatmap">
+      {!connected && (
+        <div className="iso-awaiting">
+          <span className="iso-awaiting-dot" />
+          Waiting for ESP32 connection…
+        </div>
+      )}
       <div className="iso-grid iso-grid-4">
         {ghostCells.map(([c, r]) => (
           <div

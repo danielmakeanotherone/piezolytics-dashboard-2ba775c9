@@ -8,10 +8,11 @@ interface Props {
   lastUpdate: number | null;
   onRefresh: () => void;
   onClear: () => void;
+  onLogout?: () => void;
 }
 
 const tabs = [
-  { to: "/", label: "Dashboard" },
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/zones", label: "Zones" },
   { to: "/history", label: "History" },
 ] as const;
@@ -22,7 +23,7 @@ function pillLabel(conn: ConnState, lastUpdate: number | null) {
   return `${conn} · ${t}`;
 }
 
-export function NavBar({ conn, lastUpdate, onRefresh, onClear }: Props) {
+export function NavBar({ conn, lastUpdate, onRefresh, onClear, onLogout }: Props) {
   const dotColor = conn === "offline" ? "#857363" : "#c8a876";
   return (
     <header
@@ -75,6 +76,15 @@ export function NavBar({ conn, lastUpdate, onRefresh, onClear }: Props) {
         >
           <Trash2 size={13} /> Clear
         </button>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-text2 hover:text-text hover:bg-surf2 transition-colors"
+            style={{ border: "1px solid var(--bord2)" }}
+          >
+            Log out
+          </button>
+        )}
       </div>
     </header>
   );
