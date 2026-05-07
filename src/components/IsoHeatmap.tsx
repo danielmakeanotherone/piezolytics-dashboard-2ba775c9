@@ -154,19 +154,16 @@ export function IsoHeatmap({ stats }: Props) {
       >
         {anchors.map((a) => (
           <g key={a.index} className="iso-leader">
-            <line x1={a.sx} y1={a.sy} x2={a.dx} y2={a.dy} />
+            <polyline
+              points={`${a.sx},${a.sy} ${a.bx},${a.by} ${a.dx},${a.dy}`}
+              fill="none"
+            />
             <circle cx={a.dx} cy={a.dy} r={4} />
           </g>
         ))}
       </svg>
 
       {anchors.map((a) => {
-        // Place label adjacent to the dot, in the same axial direction as the leader
-        let tx = "-50%", ty = "-50%";
-        if (a.dir === "up")    ty = "calc(-100% - 8px)";
-        if (a.dir === "down")  ty = "8px";
-        if (a.dir === "left")  tx = "calc(-100% - 8px)";
-        if (a.dir === "right") tx = "8px";
         return (
           <div
             key={a.index}
