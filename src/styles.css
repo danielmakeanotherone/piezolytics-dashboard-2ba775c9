@@ -231,8 +231,8 @@
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 4px 3px;
-  padding: 10px 8px;
+  gap: 6px 4px;
+  padding: 8px 6px;
   transform: translateZ(calc(var(--h) + 1px));
   pointer-events: none;
 }
@@ -245,7 +245,7 @@
 
 .piezo-disc {
   position: relative;
-  width: 78%;
+  width: 96%;
   aspect-ratio: 1;
   border-radius: 999px;
   background:
