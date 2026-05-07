@@ -86,7 +86,11 @@ export function IsoHeatmap({ stats, events = [] }: Props) {
             <div
               key={zone}
               ref={(el) => { realRefs.current[index] = el; }}
-              className="iso-block"
+              className="iso-block iso-block-real"
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelected(index)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(index); } }}
               style={
                 {
                   "--h": `${height}px`,
