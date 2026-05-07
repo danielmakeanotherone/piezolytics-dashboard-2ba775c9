@@ -223,3 +223,64 @@
   from { transform: translateZ(-24px); opacity: .25; }
   to { transform: translateZ(0); opacity: 1; }
 }
+
+/* Piezo array on top of each tile */
+.iso-piezos {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px 3px;
+  padding: 10px 8px;
+  transform: translateZ(calc(var(--h) + 1px));
+  pointer-events: none;
+}
+
+.piezo {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.piezo-disc {
+  position: relative;
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 30%, #f4d98a 0%, #d6a64a 40%, #8a6326 75%, #4a3617 100%);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(0,0,0,.5),
+    inset 0 0 4px rgba(0,0,0,.4),
+    0 0 calc(var(--heat) * 6px) color-mix(in srgb, var(--acc) calc(var(--heat) * 60%), transparent);
+}
+
+.piezo-dot {
+  position: absolute;
+  inset: 28%;
+  border-radius: 999px;
+  background: radial-gradient(circle at 40% 35%, #fafafa, #d8d4cc 70%, #9a9690 100%);
+  box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.3);
+}
+
+.piezo-wire {
+  position: absolute;
+  width: 1px;
+  height: 60%;
+  top: -38%;
+  border-radius: 1px;
+  transform-origin: bottom center;
+}
+
+.piezo-wire-red {
+  left: 38%;
+  background: linear-gradient(180deg, #c93a3a, #7a1f1f);
+  transform: rotate(-14deg);
+}
+
+.piezo-wire-black {
+  left: 58%;
+  background: linear-gradient(180deg, #1a1a1a, #050505);
+  transform: rotate(12deg);
+}
