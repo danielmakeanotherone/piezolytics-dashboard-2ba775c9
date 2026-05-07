@@ -373,9 +373,8 @@
 /* Hint */
 .iso-hint {
   position: absolute;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
+  right: 18px;
+  top: 14px;
   font: 500 11px/1 Inter, system-ui, sans-serif;
   letter-spacing: 0.14em;
   text-transform: uppercase;
