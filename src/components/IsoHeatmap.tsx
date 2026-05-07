@@ -18,12 +18,12 @@ const CALLOUTS: Array<{
   ey: number;
   side: "left" | "right";
 }> = [
-  // Diamond layout after rotateZ(45): i=0 LEFT, i=1 TOP, i=2 BOTTOM, i=3 RIGHT.
-  // Dots sit ~8% outside each tile's outer corner; labels extend further out.
-  { i: 0, sx: 12, sy: 58, ex: 4, ey: 58, side: "left" },   // left tile
-  { i: 1, sx: 50, sy: 30, ex: 18, ey: 22, side: "left" },  // top tile
-  { i: 2, sx: 50, sy: 88, ex: 82, ey: 94, side: "right" }, // bottom tile
-  { i: 3, sx: 88, sy: 58, ex: 96, ey: 58, side: "right" }, // right tile
+  // Diamond layout: i=0 LEFT, i=1 TOP, i=2 BOTTOM, i=3 RIGHT.
+  // Dot sits ~5% beyond each tile's outer point; label extends further out.
+  { i: 0, sx: 6, sy: 66, ex: 2, ey: 70, side: "left" },    // left tile
+  { i: 1, sx: 50, sy: 30, ex: 22, ey: 22, side: "left" },  // top tile
+  { i: 2, sx: 50, sy: 96, ex: 78, ey: 100, side: "right" },// bottom tile
+  { i: 3, sx: 94, sy: 66, ex: 98, ey: 70, side: "right" }, // right tile
 ];
 
 export function IsoHeatmap({ stats }: Props) {
