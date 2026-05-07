@@ -120,15 +120,15 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(110px, 152px));
-  gap: 28px 34px;
-  transform: rotateX(58deg) rotateZ(45deg) scale(1.02);
+  grid-template-columns: repeat(2, minmax(140px, 190px));
+  gap: 36px 42px;
+  transform: rotateX(58deg) rotateZ(45deg) scale(1.18);
   transform-style: preserve-3d;
 }
 
 .iso-block {
   position: relative;
-  width: clamp(110px, 12vw, 152px);
+  width: clamp(140px, 15vw, 190px);
   aspect-ratio: 1;
   transform-style: preserve-3d;
 }
