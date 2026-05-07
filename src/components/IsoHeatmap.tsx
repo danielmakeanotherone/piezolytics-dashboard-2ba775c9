@@ -176,12 +176,14 @@ export function IsoHeatmap({ stats }: Props) {
         const [dx, dy] = dirs[i];
         const len = Math.hypot(dx, dy);
         const ux = dx / len, uy = dy / len;
-        const tx = c.x + ux * (LEADER * 0.7);
-        const ty = c.y + uy * (LEADER * 0.7);
+        const tx = c.x + ux * LEADER;
+        const ty = c.y + uy * LEADER;
+        const side = ux < 0 ? "left" : "right";
         return (
           <div
             key={`tag-${zone}`}
             className="iso-tag iso-tag-leader"
+            data-side={side}
             style={{ left: tx, top: ty }}
           >
             <span className="iso-tag-label">Tile #{String(i + 1).padStart(2, "0")}</span>
