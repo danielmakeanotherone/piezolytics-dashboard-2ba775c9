@@ -7,6 +7,12 @@ interface Props {
 
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
+  const activeHeights = ZONE_ORDER.map((zone) => {
+    const count = stats.counts[zone];
+    const norm = count / maxCount;
+    return 34 + norm * 104;
+  });
+  const ghostPlaneHeight = Math.max(...activeHeights);
 
   // Ghost tile positions (column, row) in a 4x4 surrounding grid.
   // Active 2x2 occupies the center: cols 2-3, rows 2-3.
@@ -25,7 +31,7 @@ export function IsoHeatmap({ stats }: Props) {
           <div
             key={`ghost-${c}-${r}`}
             className="iso-block iso-block-ghost"
-            style={{ gridColumn: c, gridRow: r } as CSSProperties}
+            style={{ "--ghost-h": `${ghostPlaneHeight}px`, gridColumn: c, gridRow: r } as CSSProperties}
             aria-hidden="true"
           >
             <div className="iso-ghost-top" />
@@ -34,7 +40,7 @@ export function IsoHeatmap({ stats }: Props) {
         {ZONE_ORDER.map((zone, index) => {
           const count = stats.counts[zone];
           const norm = count / maxCount;
-          const height = 34 + norm * 104;
+          const height = activeHeights[index];
           const activePos: Array<[number, number]> = [[2,2],[3,2],[2,3],[3,3]];
           const [gc, gr] = activePos[index];
           return (

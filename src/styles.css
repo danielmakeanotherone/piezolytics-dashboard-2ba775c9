@@ -96,13 +96,11 @@
 
 .iso-stage {
   position: relative;
-  display: grid;
+  display: block;
   min-height: 100%;
-  align-content: center;
-  justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding: clamp(96px, 14vh, 120px) clamp(40px, 6vw, 80px);
+  padding: 0;
 }
 
 .iso-leader-svg {
@@ -134,17 +132,21 @@
   background: radial-gradient(ellipse at center, color-mix(in srgb, var(--acc) 18%, transparent), transparent 68%);
   filter: blur(8px);
   opacity: .45;
-  transform: translateY(108px);
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
 }
 
 .iso-grid {
-  position: relative;
+  position: absolute;
+  left: 34px;
+  top: -92px;
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, clamp(140px, 15vw, 190px));
   grid-template-rows: repeat(4, clamp(140px, 15vw, 190px));
   gap: 28px 32px;
-  transform: translateX(calc(clamp(140px, 15vw, 190px) * -1)) rotateX(58deg) rotateZ(45deg) scale(0.95);
+  transform: translateX(calc((clamp(140px, 15vw, 190px) + 32px) * -1)) rotateX(58deg) rotateZ(45deg) scale(0.95);
   transform-style: preserve-3d;
 }
 
@@ -158,6 +160,7 @@
   border: 1px dashed color-mix(in srgb, var(--acc) 22%, transparent);
   background: color-mix(in srgb, var(--surf) 35%, transparent);
   border-radius: 2px;
+  transform: translateZ(0);
 }
 
 .iso-callout-strip { display: none; }
@@ -199,7 +202,7 @@
     linear-gradient(135deg, color-mix(in srgb, var(--acc) calc(20% + var(--heat) * 40%), transparent), transparent 60%),
     radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--acc) calc(35% + var(--heat) * 55%), var(--surf3)), var(--surf2) 80%);
   box-shadow: 0 0 calc(14px + var(--heat) * 36px) color-mix(in srgb, var(--acc) calc(var(--heat) * 45%), transparent);
-  transform: translateZ(var(--h));
+  transform: translateZ(0);
 }
 
 .iso-left {
@@ -301,7 +304,7 @@
   grid-template-rows: repeat(4, 1fr);
   gap: 0;
   padding: 0;
-  transform: translateZ(calc(var(--h) + 1px));
+  transform: translateZ(1px);
   pointer-events: none;
 }
 
