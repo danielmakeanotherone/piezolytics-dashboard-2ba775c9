@@ -276,14 +276,14 @@
 
 .loom-wire {
   fill: none;
-  stroke-width: 1.1;
+  stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 0.5px 0.5px rgba(0,0,0,.6));
 }
 
-.loom-red { stroke: #d94545; }
-.loom-black { stroke: #0a0a0a; }
+.loom-red { stroke: #e94c4c; }
+.loom-black { stroke: #3a3128; }
 
 .piezo-disc { z-index: 2; position: relative; }
