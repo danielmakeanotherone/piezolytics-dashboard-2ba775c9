@@ -240,43 +240,65 @@ function TileDetail({
   const share = stats.total ? Math.round((count / stats.total) * 100) : 0;
   const zoneEvents = useMemo(() => events.filter((e) => e.sensor === zone), [events, zone]);
 
-  // Heatmap grid: 7 rows (Mon..Sun) x 24 cols (hours). Synthesize a stable
-  // distribution from the live counts so the grid is dense and readable
-  // even when only the last few minutes of events are available.
-  const COLS = 24;
-  const ROWS = 7;
-  const heat = useMemo(() => {
-    const grid: number[][] = Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
-    // 1) project real events into their (dow, hour) cell
+  // Bucket config per range. Each range produces a 1-row strip of buckets,
+  // letting Day=hours, Week=days, Month=weeks, Quarter=days, Year=months, All=years.
+  const bucketConfig: Record<RangeKey, { count: number; unit: string; labels: (i: number) => string }> = {
+    Day:     { count: 24, unit: "hour",  labels: (i) => (i % 3 === 0 ? `${i.toString().padStart(2, "0")}h` : "") },
+    Week:    { count: 7,  unit: "day",   labels: (i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i] },
+    Month:   { count: 4,  unit: "week",  labels: (i) => `W${i + 1}` },
+    Quarter: { count: 90, unit: "day",   labels: (i) => (i % 15 === 0 ? `D${i + 1}` : "") },
+    Year:    { count: 12, unit: "month", labels: (i) => ["J","F","M","A","M","J","J","A","S","O","N","D"][i] },
+    All:     { count: 5,  unit: "year",  labels: (i) => `${new Date().getFullYear() - (4 - i)}` },
+  };
+  const cfg = bucketConfig[range];
+
+  const series = useMemo(() => {
+    const buckets = new Array<number>(cfg.count).fill(0);
+    // 1) Project real events into the right bucket for this range
     for (const e of zoneEvents) {
       const d = new Date(e.epoch);
-      const dow = (d.getDay() + 6) % 7; // Mon=0 .. Sun=6
-      grid[dow][d.getHours()]++;
+      const now = new Date();
+      let idx = -1;
+      if (range === "Day") {
+        if (d.toDateString() === now.toDateString()) idx = d.getHours();
+      } else if (range === "Week") {
+        const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+        if (diffDays >= 0 && diffDays < 7) idx = 6 - diffDays;
+      } else if (range === "Month") {
+        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+          idx = Math.min(3, Math.floor((d.getDate() - 1) / 7));
+        }
+      } else if (range === "Quarter") {
+        const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+        if (diffDays >= 0 && diffDays < 90) idx = 89 - diffDays;
+      } else if (range === "Year") {
+        if (d.getFullYear() === now.getFullYear()) idx = d.getMonth();
+      } else {
+        const diffYears = now.getFullYear() - d.getFullYear();
+        if (diffYears >= 0 && diffYears < 5) idx = 4 - diffYears;
+      }
+      if (idx >= 0) buckets[idx]++;
     }
-    // 2) overlay a deterministic synthetic baseline so the chart looks lived-in
-    const seed = (index + 1) * 991;
+    // 2) Overlay deterministic synthetic data so the strip looks lived-in
+    const seed = (index + 1) * 991 + range.length * 17;
     const rand = (n: number) => {
       const x = Math.sin(seed + n * 12.9898) * 43758.5453;
       return x - Math.floor(x);
     };
     const rangeBoost = { Day: 0.4, Week: 1, Month: 1.4, Quarter: 1.8, Year: 2.2, All: 2.6 }[range];
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        // working-hours bias (peaks 11-19), weekend dip
-        const hourBias = Math.max(0, 1 - Math.abs(c - 14) / 10);
-        const dowBias = r < 5 ? 1 : 0.55;
-        const noise = rand(r * 31 + c);
-        grid[r][c] += (count / 6) * hourBias * dowBias * (0.4 + noise * 0.9) * rangeBoost;
-      }
+    for (let i = 0; i < cfg.count; i++) {
+      // Soft middle-bias bell so peaks land mid-range
+      const center = (cfg.count - 1) / 2;
+      const bias = Math.max(0.2, 1 - Math.abs(i - center) / cfg.count);
+      buckets[i] += (count / 4) * bias * (0.4 + rand(i) * 1.1) * rangeBoost;
     }
-    return grid;
-  }, [zoneEvents, count, range, index]);
+    return buckets;
+  }, [zoneEvents, count, range, index, cfg.count]);
 
-  const flat = heat.flat();
-  const minVal = Math.round(Math.min(...flat));
-  const maxVal = Math.round(Math.max(...flat));
-  const avgVal = Math.round(flat.reduce((s, v) => s + v, 0) / flat.length);
-  const heatMax = Math.max(1, ...flat);
+  const minVal = Math.round(Math.min(...series));
+  const maxVal = Math.round(Math.max(...series));
+  const avgVal = Math.round(series.reduce((s, v) => s + v, 0) / series.length);
+  const heatMax = Math.max(1, ...series);
 
   const recent = zoneEvents.slice(-12).reverse();
   const last = zoneEvents.length ? zoneEvents[zoneEvents.length - 1] : null;
@@ -314,30 +336,39 @@ function TileDetail({
         <div className="iso-detail-bignums">
           <div>
             <div className="iso-bignum">{minVal} <span className="iso-bignum-arrow">↗</span></div>
-            <small>Minimal number</small>
+            <small>Minimum / {cfg.unit}</small>
           </div>
           <div>
             <div className="iso-bignum">{avgVal} <span className="iso-bignum-arrow">↗</span></div>
-            <small>Average number</small>
+            <small>Average / {cfg.unit}</small>
           </div>
           <div>
             <div className="iso-bignum">{maxVal} <span className="iso-bignum-arrow">↗</span></div>
-            <small>Maximum number</small>
+            <small>Maximum / {cfg.unit}</small>
           </div>
         </div>
 
         <div className="iso-heatgrid">
-          <div className="iso-heatgrid-rows">
-            {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d, r) => (
-              <div key={d} className="iso-heatgrid-row">
-                <span className="iso-heatgrid-label">{d}</span>
-                <div className="iso-heatgrid-cells">
-                  {heat[r].map((v, c) => {
-                    const t = v / heatMax;
-                    return <span key={c} className="iso-heatcell" style={{ "--t": t.toFixed(3) } as CSSProperties} />;
-                  })}
-                </div>
-              </div>
+          <div className="iso-heatstrip-label">By {cfg.unit}</div>
+          <div
+            className="iso-heatstrip"
+            style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
+          >
+            {series.map((v, i) => (
+              <span
+                key={i}
+                className="iso-heatcell"
+                style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
+                title={`${cfg.labels(i) || `#${i + 1}`}: ${Math.round(v)}`}
+              />
+            ))}
+          </div>
+          <div
+            className="iso-heatstrip-axis"
+            style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
+          >
+            {series.map((_, i) => (
+              <span key={i} className="iso-heatstrip-tick">{cfg.labels(i)}</span>
             ))}
           </div>
         </div>
