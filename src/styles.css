@@ -200,7 +200,7 @@
     linear-gradient(135deg, color-mix(in srgb, var(--acc) calc(20% + var(--heat) * 40%), transparent), transparent 60%),
     radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--acc) calc(35% + var(--heat) * 55%), var(--surf3)), var(--surf2) 80%);
   box-shadow: 0 0 calc(14px + var(--heat) * 36px) color-mix(in srgb, var(--acc) calc(var(--heat) * 45%), transparent);
-  transform: translateZ(var(--h));
+  transform: translateZ(0);
 }
 
 .iso-left {
@@ -302,7 +302,7 @@
   grid-template-rows: repeat(4, 1fr);
   gap: 0;
   padding: 0;
-  transform: translateZ(calc(var(--h) + 1px));
+  transform: translateZ(1px);
   pointer-events: none;
 }
 
