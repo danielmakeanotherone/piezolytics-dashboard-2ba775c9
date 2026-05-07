@@ -232,7 +232,7 @@
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 0;
-  padding: 4px 6px;
+  padding: 0;
   transform: translateZ(calc(var(--h) + 1px));
   pointer-events: none;
 }
