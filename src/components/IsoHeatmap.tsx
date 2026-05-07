@@ -63,8 +63,10 @@ export function IsoHeatmap({ stats }: Props) {
       ]);
 
       const margin = 16;
-      const lineDx = 62;
-      const lineDy = 36;
+      const lineLength = 74;
+      const lineAngle = 30 * (Math.PI / 180);
+      const lineDx = Math.cos(lineAngle) * lineLength;
+      const lineDy = Math.sin(lineAngle) * lineLength;
       const gutter = 12;
 
       const next = tiles.map((tile) => {
