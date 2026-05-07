@@ -144,7 +144,7 @@
   grid-template-columns: repeat(4, clamp(140px, 15vw, 190px));
   grid-template-rows: repeat(4, clamp(140px, 15vw, 190px));
   gap: 28px 32px;
-  transform: translate(calc(clamp(140px, 15vw, 190px) * -1), -130px) rotateX(58deg) rotateZ(45deg) scale(0.95);
+  transform: translate(calc((clamp(140px, 15vw, 190px) + 32px) * -1), -150px) rotateX(58deg) rotateZ(45deg) scale(0.95);
   transform-style: preserve-3d;
 }
 
