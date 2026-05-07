@@ -98,11 +98,31 @@
   position: relative;
   display: grid;
   min-height: 100%;
-  align-content: start;
+  align-content: center;
   justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding-top: clamp(72px, 12vh, 96px);
+  padding: clamp(96px, 14vh, 120px) clamp(40px, 6vw, 80px);
+}
+
+.iso-leader-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.iso-leader line {
+  stroke: color-mix(in srgb, var(--acc) 55%, transparent);
+  stroke-width: 1;
+}
+.iso-leader circle {
+  fill: var(--acc);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--acc) 60%, transparent));
+}
+.iso-tag-leader {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 3;
 }
 
 .iso-stage::before {
@@ -127,16 +147,7 @@
   transform-style: preserve-3d;
 }
 
-.iso-callout-strip {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: clamp(56px, 9vh, 76px);
-  padding-inline: 16px;
-}
+.iso-callout-strip { display: none; }
 
 .iso-block {
   position: relative;
