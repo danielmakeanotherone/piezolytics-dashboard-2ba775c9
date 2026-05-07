@@ -42,7 +42,7 @@ export function IsoHeatmap({ stats }: Props) {
           const count = stats.counts[zone];
           const norm = count / maxCount;
           const height = activeHeights[index];
-          const activePos: Array<[number, number]> = [[2,2],[3,2],[2,3],[3,3]];
+          const activePos: Array<[number, number]> = [[3,3],[4,3],[3,4],[4,4]];
           const [gc, gr] = activePos[index];
           return (
             <div
