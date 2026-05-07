@@ -39,8 +39,31 @@ export function IsoHeatmap({ stats }: Props) {
     }
   }
 
+  const realRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [centers, setCenters] = useState<Array<{ x: number; y: number }>>([]);
+
+  useEffect(() => {
+    if (!stageRef.current) return;
+    const stageRect = stageRef.current.getBoundingClientRect();
+    const next = realRefs.current.map((el) => {
+      if (!el) return { x: 0, y: 0 };
+      const r = el.getBoundingClientRect();
+      return { x: r.left - stageRect.left + r.width / 2, y: r.top - stageRect.top + r.height / 2 };
+    });
+    setCenters(next);
+  }, [dims.w, dims.h, stats.total]);
+
+  // Callout direction per real tile (index order = ZONE_ORDER):
+  const dirs: Array<[number, number]> = [
+    [-1, -0.55],
+    [1, -0.55],
+    [-1, 0.55],
+    [1, 0.55],
+  ];
+  const LEADER = 150;
+
   return (
-    <div className="iso-stage" aria-label="Floor traffic heatmap">
+    <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
       <div className="iso-grid iso-grid-4">
         {ghostCells.map(([c, r]) => (
           <div
@@ -61,6 +84,7 @@ export function IsoHeatmap({ stats }: Props) {
           return (
             <div
               key={zone}
+              ref={(el) => { realRefs.current[index] = el; }}
               className="iso-block"
               style={
                 {
@@ -129,6 +153,42 @@ export function IsoHeatmap({ stats }: Props) {
           );
         })}
       </div>
+
+      {centers.length === 4 && (
+        <svg className="iso-leader-svg" width={dims.w} height={dims.h}>
+          {centers.map((c, i) => {
+            const [dx, dy] = dirs[i];
+            const len = Math.hypot(dx, dy);
+            const ux = dx / len, uy = dy / len;
+            const ex = c.x + ux * LEADER;
+            const ey = c.y + uy * LEADER;
+            return (
+              <g key={i} className="iso-leader">
+                <line x1={c.x} y1={c.y} x2={ex} y2={ey} />
+                <circle cx={ex} cy={ey} r={3} />
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      {centers.length === 4 && ZONE_ORDER.map((zone, i) => {
+        const c = centers[i];
+        const [dx, dy] = dirs[i];
+        const len = Math.hypot(dx, dy);
+        const ux = dx / len, uy = dy / len;
+        const tx = c.x + ux * (LEADER * 0.7);
+        const ty = c.y + uy * (LEADER * 0.7);
+        return (
+          <div
+            key={`tag-${zone}`}
+            className="iso-tag iso-tag-leader"
+            style={{ left: tx, top: ty }}
+          >
+            <span className="iso-tag-label">Tile #{String(i + 1).padStart(2, "0")}</span>
+            <span className="iso-tag-count">{stats.counts[zone]}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
