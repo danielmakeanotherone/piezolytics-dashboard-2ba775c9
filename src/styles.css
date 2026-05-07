@@ -96,13 +96,11 @@
 
 .iso-stage {
   position: relative;
-  display: grid;
+  display: block;
   min-height: 100%;
-  align-content: start;
-  justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding: clamp(24px, 4vh, 40px) clamp(40px, 6vw, 80px);
+  padding: 0;
 }
 
 .iso-leader-svg {
@@ -134,17 +132,21 @@
   background: radial-gradient(ellipse at center, color-mix(in srgb, var(--acc) 18%, transparent), transparent 68%);
   filter: blur(8px);
   opacity: .45;
-  transform: translateY(180px);
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
 }
 
 .iso-grid {
-  position: relative;
+  position: absolute;
+  left: 34px;
+  top: 78px;
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, clamp(140px, 15vw, 190px));
   grid-template-rows: repeat(4, clamp(140px, 15vw, 190px));
   gap: 28px 32px;
-  transform: translate(calc((clamp(140px, 15vw, 190px) + 32px) * -1), -235px) rotateX(58deg) rotateZ(45deg) scale(0.95);
+  transform: translateX(calc((clamp(140px, 15vw, 190px) + 32px) * -1)) rotateX(58deg) rotateZ(45deg) scale(0.95);
   transform-style: preserve-3d;
 }
 
