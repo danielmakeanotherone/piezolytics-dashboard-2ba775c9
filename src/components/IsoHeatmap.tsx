@@ -74,22 +74,15 @@ export function IsoHeatmap({ stats }: Props) {
                         }
                       }
                       const buildPath = (offset: number, arc: number) => {
-                        let d = `M${pts[0][0].toFixed(2)},${(pts[0][1] + offset).toFixed(2)}`;
+                        let d = "";
                         for (let i = 1; i < pts.length; i++) {
                           const [x0, y0] = pts[i - 1];
                           const [x1, y1] = pts[i];
                           const sameRow = Math.abs(y0 - y1) < 0.01;
-                          if (sameRow) {
-                            // arc upward between two adjacent discs in same row
-                            const mx = (x0 + x1) / 2;
-                            const cy = (y0 + offset) - arc;
-                            d += ` Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)}`;
-                          } else {
-                            // row jump on the far side (turnaround loop)
-                            const cx = x0 > 50 ? x0 + arc * 1.4 : x0 - arc * 1.4;
-                            const cy = (y0 + y1) / 2 + offset;
-                            d += ` Q${cx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)}`;
-                          }
+                          if (!sameRow) continue; // skip end-of-row turnaround wires
+                          const mx = (x0 + x1) / 2;
+                          const cy = (y0 + offset) - arc;
+                          d += `M${x0.toFixed(2)},${(y0 + offset).toFixed(2)} Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)} `;
                         }
                         return d;
                       };
