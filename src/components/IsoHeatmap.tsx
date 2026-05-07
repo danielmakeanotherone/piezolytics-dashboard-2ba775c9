@@ -171,7 +171,7 @@ export function IsoHeatmap({ stats }: Props) {
             style={{
               left: a.dx,
               top: a.dy,
-              transform: `translate(${tx}, ${ty})`,
+              transform: `translate(8px, -50%)`,
             }}
           >
             <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
