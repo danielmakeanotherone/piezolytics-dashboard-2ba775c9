@@ -54,6 +54,17 @@ export function IsoHeatmap({ stats }: Props) {
                 <div className="iso-top" />
                 <div className="iso-left" />
                 <div className="iso-right" />
+                <div className="iso-piezos">
+                  {Array.from({ length: 16 }).map((_, p) => (
+                    <div key={p} className="piezo">
+                      <span className="piezo-wire piezo-wire-red" />
+                      <span className="piezo-wire piezo-wire-black" />
+                      <span className="piezo-disc">
+                        <span className="piezo-dot" />
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           );
