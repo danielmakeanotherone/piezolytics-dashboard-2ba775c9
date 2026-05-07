@@ -88,8 +88,8 @@ export function IsoHeatmap({ stats }: Props) {
                       };
                       return (
                         <>
-                          <path d={buildPath(-3, 11)} className="loom-wire loom-red" />
-                          <path d={buildPath(3, 11)} className="loom-wire loom-black" />
+                          <path d={buildPath(-2, 5)} className="loom-wire loom-red" />
+                          <path d={buildPath(2, 5)} className="loom-wire loom-black" />
                         </>
                       );
                     })()}
