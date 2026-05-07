@@ -285,10 +285,5 @@
 
 .loom-red { stroke: #e94c4c; }
 .loom-black { stroke: #111; }
-  filter: drop-shadow(0 0.5px 0.5px rgba(0,0,0,.6));
-}
-
-.loom-red { stroke: #d94545; }
-.loom-black { stroke: #0a0a0a; }
 
 .piezo-disc { z-index: 2; position: relative; }
