@@ -158,6 +158,7 @@
   border: 1px dashed color-mix(in srgb, var(--acc) 22%, transparent);
   background: color-mix(in srgb, var(--surf) 35%, transparent);
   border-radius: 2px;
+  transform: translateZ(var(--ghost-h));
 }
 
 .iso-callout-strip { display: none; }
