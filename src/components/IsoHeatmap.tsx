@@ -1,5 +1,5 @@
 import { ZONE_ORDER, type Stats } from "@/lib/floor-data";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 interface Props {
   stats: Stats;
@@ -24,7 +24,7 @@ export function IsoHeatmap({ stats }: Props) {
   const blockRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [callouts, setCallouts] = useState<CalloutLayout[]>([]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -108,6 +108,7 @@ export function IsoHeatmap({ stats }: Props) {
     };
 
     const frame = window.requestAnimationFrame(updateCallouts);
+    const timer = window.setTimeout(updateCallouts, 250);
     window.addEventListener("resize", updateCallouts);
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateCallouts) : null;
     observer?.observe(stage);
@@ -115,6 +116,7 @@ export function IsoHeatmap({ stats }: Props) {
 
     return () => {
       window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
       window.removeEventListener("resize", updateCallouts);
       observer?.disconnect();
     };
