@@ -6,13 +6,18 @@ interface Props {
 }
 
 interface Anchor {
-  x: number;
-  y: number;
+  // tile edge point where the line starts
+  sx: number;
+  sy: number;
+  // dot/label point where the line ends
+  dx: number;
+  dy: number;
   side: "top" | "bottom";
   index: number;
 }
 
-const LINE_LENGTH = 56; // uniform line length for every callout
+const LEADER_LEN = 64; // uniform diagonal line length
+const ANGLE = Math.PI / 4; // 45 degrees, consistent for all
 
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
@@ -28,24 +33,43 @@ export function IsoHeatmap({ stats }: Props) {
       const sRect = stage.getBoundingClientRect();
       setStageSize({ w: sRect.width, h: sRect.height });
 
-      // Compute tile centers in stage coordinates
-      const centers = tileRefs.current.map((el, i) => {
+      const tiles = tileRefs.current.map((el, i) => {
         if (!el) return null;
         const r = el.getBoundingClientRect();
-        return { x: r.left + r.width / 2 - sRect.left, y: r.top + r.height / 2 - sRect.top, i };
-      }).filter(Boolean) as Array<{ x: number; y: number; i: number }>;
+        return {
+          i,
+          cx: r.left + r.width / 2 - sRect.left,
+          cy: r.top + r.height / 2 - sRect.top,
+          left: r.left - sRect.left,
+          right: r.right - sRect.left,
+          top: r.top - sRect.top,
+          bottom: r.bottom - sRect.top,
+        };
+      }).filter(Boolean) as Array<{ i: number; cx: number; cy: number; left: number; right: number; top: number; bottom: number }>;
 
-      if (centers.length === 0) return;
+      if (tiles.length === 0) return;
 
-      // bbox of cluster
-      const minY = Math.min(...centers.map(c => c.y));
-      const maxY = Math.max(...centers.map(c => c.y));
+      const minY = Math.min(...tiles.map(t => t.cy));
+      const maxY = Math.max(...tiles.map(t => t.cy));
       const midY = (minY + maxY) / 2;
+      const midX = tiles.reduce((s, t) => s + t.cx, 0) / tiles.length;
 
-      // Top half tiles -> top callouts; bottom half -> bottom callouts
-      const next: Anchor[] = centers.map(c => {
-        const side: "top" | "bottom" = c.y < midY ? "top" : "bottom";
-        return { x: c.x, y: c.y, side, index: c.i };
+      const next: Anchor[] = tiles.map(t => {
+        const isTop = t.cy < midY;
+        const isLeft = t.cx < midX;
+        // Anchor at the outer corner of the tile (away from cluster center)
+        const sx = isLeft ? t.left + 8 : t.right - 8;
+        const sy = isTop ? t.top + 8 : t.bottom - 8;
+        // Dot extends diagonally outward at 45°, uniform length
+        const dirX = isLeft ? -1 : 1;
+        const dirY = isTop ? -1 : 1;
+        const dx = sx + dirX * Math.cos(ANGLE) * LEADER_LEN;
+        const dy = sy + dirY * Math.sin(ANGLE) * LEADER_LEN;
+        return {
+          sx, sy, dx, dy,
+          side: isTop ? "top" : "bottom",
+          index: t.i,
+        };
       });
       setAnchors(next);
     };
@@ -61,9 +85,8 @@ export function IsoHeatmap({ stats }: Props) {
     };
   }, []);
 
-  // Compute uniform top/bottom strip Y positions based on cluster bbox
-  const topY = anchors.length ? Math.min(...anchors.map(a => a.y)) - LINE_LENGTH : 0;
-  const bottomY = anchors.length ? Math.max(...anchors.map(a => a.y)) + LINE_LENGTH : 0;
+  // Determine which side of the dot the label sits on (away from tile)
+
 
   return (
     <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
@@ -146,27 +169,24 @@ export function IsoHeatmap({ stats }: Props) {
         height={stageSize.h}
         aria-hidden="true"
       >
-        {anchors.map((a) => {
-          const ly = a.side === "top" ? topY : bottomY;
-          return (
-            <g key={a.index} className="iso-leader">
-              <line x1={a.x} y1={ly} x2={a.x} y2={a.side === "top" ? a.y - 8 : a.y + 8} />
-              <circle cx={a.x} cy={ly} r={3.5} />
-            </g>
-          );
-        })}
+        {anchors.map((a) => (
+          <g key={a.index} className="iso-leader">
+            <line x1={a.sx} y1={a.sy} x2={a.dx} y2={a.dy} />
+            <circle cx={a.dx} cy={a.dy} r={4} />
+          </g>
+        ))}
       </svg>
 
       {anchors.map((a) => {
-        const ly = a.side === "top" ? topY : bottomY;
+        const labelLeft = a.dx < a.sx; // dot is to the left of tile -> label further left
         return (
           <div
             key={a.index}
             className="iso-tag iso-tag-leader"
-            data-side={a.side}
             style={{
-              left: a.x,
-              top: a.side === "top" ? ly - 14 : ly + 14,
+              left: a.dx,
+              top: a.dy,
+              transform: `translate(${labelLeft ? "calc(-100% - 10px)" : "10px"}, -50%)`,
             }}
           >
             <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
