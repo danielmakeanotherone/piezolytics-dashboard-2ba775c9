@@ -245,8 +245,8 @@ function TileDetail({
   const bucketConfig: Record<RangeKey, { count: number; unit: string; labels: (i: number) => string }> = {
     Day:     { count: 24, unit: "hour",  labels: (i) => (i % 3 === 0 ? `${i.toString().padStart(2, "0")}h` : "") },
     Week:    { count: 7,  unit: "day",   labels: (i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i] },
-    Month:   { count: 4,  unit: "week",  labels: (i) => `W${i + 1}` },
-    Quarter: { count: 90, unit: "day",   labels: (i) => (i % 15 === 0 ? `D${i + 1}` : "") },
+    Month:   { count: 30, unit: "day",   labels: (i) => (i % 5 === 0 ? `D${i + 1}` : "") },
+    Quarter: { count: 13, unit: "week",  labels: (i) => `W${i + 1}` },
     Year:    { count: 12, unit: "month", labels: (i) => ["J","F","M","A","M","J","J","A","S","O","N","D"][i] },
     All:     { count: 5,  unit: "year",  labels: (i) => `${new Date().getFullYear() - (4 - i)}` },
   };
