@@ -164,8 +164,8 @@
 
 .iso-block {
   position: relative;
-  width: clamp(140px, 15vw, 190px);
-  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
   transform-style: preserve-3d;
 }
 
