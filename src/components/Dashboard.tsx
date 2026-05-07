@@ -79,7 +79,7 @@ export function Dashboard({ demo = false, hideNav = false }: { demo?: boolean; h
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} />
+      {!hideNav && <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} />}
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
         <HeroStats stats={stats} />
 
