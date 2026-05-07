@@ -141,10 +141,12 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(6, minmax(140px, 190px));
-  grid-template-rows: repeat(6, minmax(140px, 190px));
-  gap: 36px 42px;
-  transform: rotateX(58deg) rotateZ(45deg) scale(1.18);
+  /* Active tiles use full size (190px); ghost tiles use a smaller cell so the
+     whole 6x6 fits inside the card without overflowing. */
+  grid-template-columns: 90px 90px 190px 190px 90px 90px;
+  grid-template-rows: 90px 90px 190px 190px 90px 90px;
+  gap: 18px;
+  transform: rotateX(58deg) rotateZ(45deg) scale(0.78);
   transform-style: preserve-3d;
 }
 
