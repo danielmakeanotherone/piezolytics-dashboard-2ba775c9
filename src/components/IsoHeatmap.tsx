@@ -201,27 +201,25 @@ export function IsoHeatmap({ stats }: Props) {
         })}
       </div>
 
-      {/* Callout overlay */}
-      <svg className="iso-callouts" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        {CALLOUTS.map((c) => {
-          const midX = c.side === "left" ? c.ex + 6 : c.ex - 6;
+      <svg className="iso-callouts" aria-hidden="true">
+        {callouts.map((c) => {
           return (
             <g key={c.i}>
               <polyline
-                points={`${c.sx},${c.sy} ${midX},${c.ey} ${c.ex},${c.ey}`}
+                points={`${c.lineX},${c.lineY} ${c.dotX},${c.dotY}`}
                 fill="none"
                 stroke="var(--acc)"
                 strokeOpacity="0.55"
-                strokeWidth="0.18"
+                strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
-              <circle cx={c.sx} cy={c.sy} r="0.5" fill="var(--acc)" vectorEffect="non-scaling-stroke" />
+              <circle cx={c.dotX} cy={c.dotY} r="3.5" fill="var(--acc)" />
             </g>
           );
         })}
       </svg>
 
-      {CALLOUTS.map((c) => {
+      {callouts.map((c) => {
         const zone = ZONE_ORDER[c.i];
         const count = stats.counts[zone];
         const num = String(c.i + 1).padStart(2, "0");
@@ -231,8 +229,8 @@ export function IsoHeatmap({ stats }: Props) {
             className="iso-tag"
             data-side={c.side}
             style={{
-              left: `${c.ex}%`,
-              top: `${c.ey}%`,
+              left: `${c.tagX}px`,
+              top: `${c.tagY}px`,
             }}
           >
             <span className="iso-tag-label">Tile # {num}</span>
