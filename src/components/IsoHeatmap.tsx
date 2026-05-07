@@ -78,19 +78,25 @@ export function IsoHeatmap({ stats }: Props) {
                         for (let i = 1; i < pts.length; i++) {
                           const [x0, y0] = pts[i - 1];
                           const [x1, y1] = pts[i];
-                          const mx = (x0 + x1) / 2;
                           const sameRow = Math.abs(y0 - y1) < 0.01;
-                          // For same-row hops: arc upward (negative y). For row jump: arc sideways.
-                          const cy = sameRow ? (y0 + offset) - arc : (y0 + y1) / 2 + offset;
-                          const cx = sameRow ? mx : (x0 > 50 ? x0 + arc : x0 - arc);
-                          d += ` Q${cx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)}`;
+                          if (sameRow) {
+                            // arc upward between two adjacent discs in same row
+                            const mx = (x0 + x1) / 2;
+                            const cy = (y0 + offset) - arc;
+                            d += ` Q${mx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)}`;
+                          } else {
+                            // row jump on the far side (turnaround loop)
+                            const cx = x0 > 50 ? x0 + arc * 1.4 : x0 - arc * 1.4;
+                            const cy = (y0 + y1) / 2 + offset;
+                            d += ` Q${cx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)}`;
+                          }
                         }
                         return d;
                       };
                       return (
                         <>
-                          <path d={buildPath(-2.2, 9)} className="loom-wire loom-red" />
-                          <path d={buildPath(2.2, 9)} className="loom-wire loom-black" />
+                          <path d={buildPath(-3, 22)} className="loom-wire loom-red" />
+                          <path d={buildPath(3, 22)} className="loom-wire loom-black" />
                         </>
                       );
                     })()}
