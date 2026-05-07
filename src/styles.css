@@ -231,8 +231,8 @@
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 6px 4px;
-  padding: 8px 6px;
+  gap: 0;
+  padding: 4px 6px;
   transform: translateZ(calc(var(--h) + 1px));
   pointer-events: none;
 }
