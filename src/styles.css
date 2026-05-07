@@ -143,8 +143,8 @@
   top: -92px;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(6, clamp(140px, 15vw, 190px));
-  grid-template-rows: repeat(6, clamp(140px, 15vw, 190px));
+  grid-template-columns: repeat(8, clamp(140px, 15vw, 190px));
+  grid-template-rows: repeat(8, clamp(140px, 15vw, 190px));
   gap: 28px 32px;
   transform: translateX(-50%) rotateX(58deg) rotateZ(45deg) scale(0.95);
   transform-style: preserve-3d;
