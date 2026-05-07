@@ -73,10 +73,20 @@ export function IsoHeatmap({ stats }: Props) {
                           pts.push([((c + 0.5) / cols) * 100, ((r + 0.5) / rows) * 100]);
                         }
                       }
-                      const buildPath = (offset: number) =>
-                        pts
-                          .map(([x, y], idx) => `${idx === 0 ? "M" : "L"}${x.toFixed(2)},${(y + offset).toFixed(2)}`)
-                          .join(" ");
+                      const buildPath = (offset: number, arc: number) => {
+                        let d = `M${pts[0][0].toFixed(2)},${(pts[0][1] + offset).toFixed(2)}`;
+                        for (let i = 1; i < pts.length; i++) {
+                          const [x0, y0] = pts[i - 1];
+                          const [x1, y1] = pts[i];
+                          const mx = (x0 + x1) / 2;
+                          const sameRow = Math.abs(y0 - y1) < 0.01;
+                          // For same-row hops: arc upward (negative y). For row jump: arc sideways.
+                          const cy = sameRow ? (y0 + offset) - arc : (y0 + y1) / 2 + offset;
+                          const cx = sameRow ? mx : (x0 > 50 ? x0 + arc : x0 - arc);
+                          d += ` Q${cx.toFixed(2)},${cy.toFixed(2)} ${x1.toFixed(2)},${(y1 + offset).toFixed(2)}`;
+                        }
+                        return d;
+                      };
                       return (
                         <>
                           <path d={buildPath(-2.2)} className="loom-wire loom-red" />
