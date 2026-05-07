@@ -151,7 +151,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
 
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
-                <div className="text-text font-medium">Sensor health</div>
+                <div className="text-text font-medium">Sensor Health</div>
                 <div className="text-text3 text-[11px]">{stats.activeZones} of 4 reporting</div>
               </div>
               <div className="mt-4 flex flex-col gap-2.5">
