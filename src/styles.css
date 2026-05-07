@@ -98,10 +98,11 @@
   position: relative;
   display: grid;
   min-height: 100%;
-  place-items: start center;
+  align-content: start;
+  justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding-top: clamp(104px, 18vh, 132px);
+  padding-top: clamp(72px, 12vh, 96px);
 }
 
 .iso-stage::before {
@@ -124,6 +125,17 @@
   gap: 36px 42px;
   transform: rotateX(58deg) rotateZ(45deg) scale(1.18);
   transform-style: preserve-3d;
+}
+
+.iso-callout-strip {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: clamp(56px, 9vh, 76px);
+  padding-inline: 16px;
 }
 
 .iso-block {
@@ -208,6 +220,11 @@
 
 .iso-tag[data-side="left"] { transform: translate(0, -50%); }
 .iso-tag[data-side="right"] { transform: translate(-100%, -50%); }
+
+.iso-tag-static {
+  position: relative;
+  transform: none;
+}
 
 .iso-tag-label {
   font-size: 11px;
