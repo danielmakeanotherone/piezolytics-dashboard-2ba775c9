@@ -23,7 +23,7 @@ function pillLabel(conn: ConnState, lastUpdate: number | null) {
   return `${conn} · ${t}`;
 }
 
-export function NavBar({ conn, lastUpdate, onRefresh, onClear }: Props) {
+export function NavBar({ conn, lastUpdate, onRefresh, onClear, onLogout }: Props) {
   const dotColor = conn === "offline" ? "#857363" : "#c8a876";
   return (
     <header
