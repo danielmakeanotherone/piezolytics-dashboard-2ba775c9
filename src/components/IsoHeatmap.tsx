@@ -65,7 +65,13 @@ export function IsoHeatmap({ stats, events = [], connected = true }: Props) {
   const LEADER = 95;
 
   return (
-    <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
+    <div className={connected ? "iso-stage" : "iso-stage iso-stage-idle"} ref={stageRef} aria-label="Floor traffic heatmap">
+      {!connected && (
+        <div className="iso-awaiting">
+          <span className="iso-awaiting-dot" />
+          Waiting for ESP32 connection…
+        </div>
+      )}
       <div className="iso-grid iso-grid-4">
         {ghostCells.map(([c, r]) => (
           <div
