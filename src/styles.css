@@ -98,11 +98,11 @@
   position: relative;
   display: grid;
   min-height: 100%;
-  align-content: start;
+  align-content: center;
   justify-items: center;
   overflow: hidden;
   perspective: 1200px;
-  padding: 16px 16px 0;
+  padding: clamp(96px, 14vh, 120px) clamp(40px, 6vw, 80px);
 }
 
 .iso-leader-svg {
@@ -141,13 +141,10 @@
   position: relative;
   z-index: 1;
   display: grid;
-  /* All cells (active + ghost) are the same size so the outlines match the
-     real tiles. Six equal columns/rows in a 6x6 layout. */
-  grid-template-columns: repeat(6, 170px);
-  grid-template-rows: repeat(6, 170px);
-  gap: 14px;
-  transform: rotateX(58deg) rotateZ(45deg) scale(0.62);
-  transform-origin: top center;
+  grid-template-columns: repeat(6, minmax(140px, 190px));
+  grid-template-rows: repeat(6, minmax(140px, 190px));
+  gap: 36px 42px;
+  transform: rotateX(58deg) rotateZ(45deg) scale(1.18);
   transform-style: preserve-3d;
 }
 
