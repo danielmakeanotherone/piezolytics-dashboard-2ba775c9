@@ -1,11 +1,23 @@
 import { ZONE_ORDER, type Stats } from "@/lib/floor-data";
-import { type CSSProperties } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 interface Props {
   stats: Stats;
 }
 
 export function IsoHeatmap({ stats }: Props) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [dims, setDims] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    if (!stageRef.current) return;
+    const el = stageRef.current;
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      setDims({ w: r.width, h: r.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const maxCount = Math.max(1, stats.maxCount);
   const activeHeights = ZONE_ORDER.map((zone) => {
     const count = stats.counts[zone];
