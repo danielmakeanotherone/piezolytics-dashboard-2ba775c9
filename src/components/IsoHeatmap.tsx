@@ -14,12 +14,12 @@ export function IsoHeatmap({ stats }: Props) {
   });
   const ghostPlaneHeight = Math.max(...activeHeights);
 
-  // Ghost tile positions (column, row) in a 6x6 surrounding grid.
-  // Active 2x2 occupies the center: cols 3-4, rows 3-4.
+  // Ghost tile positions (column, row) in an 8x8 surrounding grid.
+  // Active 2x2 occupies the center: cols 4-5, rows 4-5.
   const ghostCells: Array<[number, number]> = [];
-  for (let r = 1; r <= 6; r++) {
-    for (let c = 1; c <= 6; c++) {
-      const isActive = (c === 3 || c === 4) && (r === 3 || r === 4);
+  for (let r = 1; r <= 8; r++) {
+    for (let c = 1; c <= 8; c++) {
+      const isActive = (c === 4 || c === 5) && (r === 4 || r === 5);
       if (!isActive) ghostCells.push([c, r]);
     }
   }
