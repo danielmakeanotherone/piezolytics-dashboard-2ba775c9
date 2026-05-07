@@ -204,7 +204,7 @@ export function IsoHeatmap({ stats, events = [], connected = true }: Props) {
         );
       })}
 
-      <div className="iso-hint">Click a tile to view analytics</div>
+      
 
       {selected !== null && (
         <TileDetail
