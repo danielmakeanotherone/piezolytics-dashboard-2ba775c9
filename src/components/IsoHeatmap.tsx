@@ -335,6 +335,16 @@ function TileDetail({
           </div>
         </div>
 
+        <div className="iso-heatlegend">
+          <span className="iso-heatlegend-label">Less</span>
+          <span className="iso-heatlegend-scale">
+            {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => (
+              <span key={t} className="iso-heatcell iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
+            ))}
+          </span>
+          <span className="iso-heatlegend-label">More events</span>
+        </div>
+
         <div className="iso-detail-section">
           <div className="iso-detail-section-title">
             <span>Recent events</span>

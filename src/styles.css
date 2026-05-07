@@ -373,9 +373,8 @@
 /* Hint */
 .iso-hint {
   position: absolute;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
+  right: 18px;
+  top: 14px;
   font: 500 11px/1 Inter, system-ui, sans-serif;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -564,6 +563,27 @@
   transition: transform .15s ease;
 }
 .iso-heatcell:hover { transform: scale(1.15); }
+
+.iso-heatlegend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding-left: 38px;
+  font: 500 10px/1 Inter, system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.iso-heatlegend-scale {
+  display: inline-flex;
+  gap: 3px;
+}
+.iso-heatlegend-cell {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+}
 
 .iso-detail-section { margin-top: 18px; }
 .iso-detail-section-title {
