@@ -131,7 +131,15 @@ function Dashboard() {
                 <div>
                   <div className="text-text font-medium">Traffic intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
-                    Peak: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
+                    Peak Zone: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--acc)", fontFamily: "Inter" }}>
+                    {stats.total}
+                  </div>
+                  <div className="text-text3" style={{ fontSize: 10, letterSpacing: 0.3 }}>
+                    Total events
                   </div>
                 </div>
               </div>
