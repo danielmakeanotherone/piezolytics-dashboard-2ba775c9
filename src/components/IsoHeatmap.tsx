@@ -178,7 +178,7 @@ export function IsoHeatmap({ stats }: Props) {
         const ux = dx / len, uy = dy / len;
         const tx = c.x + ux * LEADER;
         const ty = c.y + uy * LEADER;
-        const side = ux < 0 ? "left" : "right";
+        const side = ux < 0 ? "right" : "left";
         return (
           <div
             key={`tag-${zone}`}
