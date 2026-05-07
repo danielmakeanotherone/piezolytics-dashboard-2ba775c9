@@ -49,10 +49,10 @@ export function IsoHeatmap({ stats }: Props) {
       const next: Anchor[] = tiles.map(t => {
         const sx = t.cx;
         const sy = t.cy;
-        // 45° up-right out of the tile
-        const bx = sx + OUT_LEN * Math.SQRT1_2;
+        // 45° up-LEFT out of the tile, then horizontally further left to the dot/label
+        const bx = sx - OUT_LEN * Math.SQRT1_2;
         const by = sy - OUT_LEN * Math.SQRT1_2;
-        const dx = bx + RIGHT_LEN;
+        const dx = bx - RIGHT_LEN;
         const dy = by;
         return { sx, sy, bx, by, dx, dy, index: t.i };
       });
@@ -171,7 +171,7 @@ export function IsoHeatmap({ stats }: Props) {
             style={{
               left: a.dx,
               top: a.dy,
-              transform: `translate(8px, -50%)`,
+              transform: `translate(calc(-100% - 8px), -50%)`,
             }}
           >
             <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
