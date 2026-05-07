@@ -119,7 +119,7 @@ function Dashboard() {
               <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <IsoHeatmap stats={stats} />
+              <IsoHeatmap stats={stats} events={events} />
             </div>
           </section>
 
