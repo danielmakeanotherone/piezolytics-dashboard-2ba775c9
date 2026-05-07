@@ -54,7 +54,7 @@ function Wave({ data }: { data: number[] }) {
   return <div ref={wrap} style={{ width: "100%", height: 110, overflow: "hidden" }}><canvas ref={ref} style={{ display: "block" }} /></div>;
 }
 
-export function Dashboard({ demo = false, hideNav = false }: { demo?: boolean; hideNav?: boolean }) {
+export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
