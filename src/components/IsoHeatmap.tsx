@@ -266,11 +266,12 @@ function TileDetail({
         if (diffDays >= 0 && diffDays < 7) idx = 6 - diffDays;
       } else if (range === "Month") {
         if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
-          idx = Math.min(3, Math.floor((d.getDate() - 1) / 7));
+          idx = Math.min(cfg.count - 1, d.getDate() - 1);
         }
       } else if (range === "Quarter") {
         const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-        if (diffDays >= 0 && diffDays < 90) idx = 89 - diffDays;
+        const weeksAgo = Math.floor(diffDays / 7);
+        if (weeksAgo >= 0 && weeksAgo < cfg.count) idx = cfg.count - 1 - weeksAgo;
       } else if (range === "Year") {
         if (d.getFullYear() === now.getFullYear()) idx = d.getMonth();
       } else {
