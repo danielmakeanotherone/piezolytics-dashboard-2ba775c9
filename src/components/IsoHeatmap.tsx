@@ -18,14 +18,14 @@ const CALLOUTS: Array<{
   ey: number;
   side: "left" | "right";
 }> = [
-  // Tile 01 — top of diamond
-  { i: 0, sx: 48, sy: 33, ex: 15, ey: 22, side: "left" },
-  // Tile 02 — right of diamond
-  { i: 1, sx: 67, sy: 41, ex: 92, ey: 32, side: "right" },
-  // Tile 03 — left of diamond
-  { i: 2, sx: 30, sy: 41, ex: 8, ey: 52, side: "left" },
-  // Tile 04 — bottom of diamond
-  { i: 3, sx: 48, sy: 50, ex: 88, ey: 60, side: "right" },
+  // Tile 01 — top-left of diamond, dot sits off the edge
+  { i: 0, sx: 30, sy: 26, ex: 15, ey: 22, side: "left" },
+  // Tile 02 — top-right of diamond
+  { i: 1, sx: 78, sy: 34, ex: 92, ey: 32, side: "right" },
+  // Tile 03 — bottom-left of diamond
+  { i: 2, sx: 20, sy: 50, ex: 8, ey: 52, side: "left" },
+  // Tile 04 — bottom-right of diamond
+  { i: 3, sx: 80, sy: 58, ex: 88, ey: 60, side: "right" },
 ];
 
 export function IsoHeatmap({ stats }: Props) {
