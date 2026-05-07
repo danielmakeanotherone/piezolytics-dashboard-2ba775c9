@@ -1,82 +1,15 @@
 import { ZONE_ORDER, type Stats } from "@/lib/floor-data";
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 
 interface Props {
   stats: Stats;
 }
 
-interface Anchor {
-  sx: number;  // start at tile midpoint
-  sy: number;
-  bx: number;  // bend point
-  by: number;
-  dx: number;  // dot/label point
-  dy: number;
-  index: number;
-}
-
-const OUT_LEN = 56;   // uniform outward distance from tile center to bend
-const RIGHT_LEN = 64; // uniform horizontal length from bend to dot
-
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const tileRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const [anchors, setAnchors] = useState<Anchor[]>([]);
-  const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const stage = stageRef.current;
-      if (!stage) return;
-      const sRect = stage.getBoundingClientRect();
-      setStageSize({ w: sRect.width, h: sRect.height });
-
-      const tiles = tileRefs.current.map((el, i) => {
-        if (!el) return null;
-        const r = el.getBoundingClientRect();
-        return {
-          i,
-          cx: r.left + r.width / 2 - sRect.left,
-          cy: r.top + r.height / 2 - sRect.top,
-        };
-      }).filter(Boolean) as Array<{ i: number; cx: number; cy: number }>;
-
-      if (tiles.length === 0) return;
-
-      // Each tile: line exits midpoint diagonally up-right, then bends
-      // horizontally to the right where the dot + label sit. Uniform.
-      const next: Anchor[] = tiles.map(t => {
-        // Tiles 1 & 3 (index 0, 2) -> bend right; Tiles 2 & 4 (index 1, 3) -> bend left
-        const goRight = t.i % 2 === 0;
-        const sign = goRight ? 1 : -1;
-        // Start at the midpoint of the opposite side (left side for right-going, right side for left-going)
-        const sx = t.cx - sign * OUT_LEN * Math.SQRT1_2;
-        const sy = t.cy - OUT_LEN * Math.SQRT1_2 * 0 + 0; // start vertically centered
-        // Diagonal up segment of uniform length OUT_LEN, then horizontal RIGHT_LEN to the dot
-        const bx = sx + sign * OUT_LEN * Math.SQRT1_2;
-        const by = sy - OUT_LEN * Math.SQRT1_2;
-        const dx = bx + sign * RIGHT_LEN;
-        const dy = by;
-        return { sx, sy, bx, by, dx, dy, index: t.i };
-      });
-      setAnchors(next);
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (stageRef.current) ro.observe(stageRef.current);
-    tileRefs.current.forEach(el => el && ro.observe(el));
-    window.addEventListener("resize", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-
 
   return (
-    <div className="iso-stage" ref={stageRef} aria-label="Floor traffic heatmap">
+    <div className="iso-stage" aria-label="Floor traffic heatmap">
       <div className="iso-grid">
         {ZONE_ORDER.map((zone, index) => {
           const count = stats.counts[zone];
@@ -85,7 +18,6 @@ export function IsoHeatmap({ stats }: Props) {
           return (
             <div
               key={zone}
-              ref={(el) => { tileRefs.current[index] = el; }}
               className="iso-block"
               style={
                 {
@@ -143,47 +75,15 @@ export function IsoHeatmap({ stats }: Props) {
                     })()}
                   </svg>
                 </div>
+                <div className="iso-side-label">
+                  <span>Tile {String(index + 1).padStart(2, "0")}</span>
+                  <span className="iso-side-count">{count}</span>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Callout overlay: uniform leader lines + dots, never crossing tiles */}
-      <svg
-        className="iso-leader-svg"
-        width={stageSize.w}
-        height={stageSize.h}
-        aria-hidden="true"
-      >
-        {anchors.map((a) => (
-          <g key={a.index} className="iso-leader">
-            <polyline
-              points={`${a.sx},${a.sy} ${a.bx},${a.by} ${a.dx},${a.dy}`}
-              fill="none"
-            />
-            <circle cx={a.dx} cy={a.dy} r={4} />
-          </g>
-        ))}
-      </svg>
-
-      {anchors.map((a) => {
-        const goRight = a.index % 2 === 0;
-        return (
-          <div
-            key={a.index}
-            className="iso-tag iso-tag-leader"
-            style={{
-              left: a.dx,
-              top: a.dy,
-              transform: goRight ? `translate(8px, -50%)` : `translate(calc(-100% - 8px), -50%)`,
-            }}
-          >
-            <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
-            <span className="iso-tag-count">{stats.counts[ZONE_ORDER[a.index]]}</span>
-          </div>
-        );
-      })}
     </div>
   );
 }
