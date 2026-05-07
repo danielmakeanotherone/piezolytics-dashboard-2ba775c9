@@ -57,13 +57,34 @@ export function IsoHeatmap({ stats }: Props) {
                 <div className="iso-piezos">
                   {Array.from({ length: 16 }).map((_, p) => (
                     <div key={p} className="piezo">
-                      <span className="piezo-wire piezo-wire-red" />
-                      <span className="piezo-wire piezo-wire-black" />
                       <span className="piezo-disc">
                         <span className="piezo-dot" />
                       </span>
                     </div>
                   ))}
+                  <svg className="piezo-loom" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    {(() => {
+                      // Serpentine path through 8x2 grid (row 0 L→R, then row 1 R→L)
+                      const cols = 8, rows = 2;
+                      const pts: Array<[number, number]> = [];
+                      for (let r = 0; r < rows; r++) {
+                        for (let i = 0; i < cols; i++) {
+                          const c = r % 2 === 0 ? i : cols - 1 - i;
+                          pts.push([((c + 0.5) / cols) * 100, ((r + 0.5) / rows) * 100]);
+                        }
+                      }
+                      const buildPath = (offset: number) =>
+                        pts
+                          .map(([x, y], idx) => `${idx === 0 ? "M" : "L"}${x.toFixed(2)},${(y + offset).toFixed(2)}`)
+                          .join(" ");
+                      return (
+                        <>
+                          <path d={buildPath(-2.2)} className="loom-wire loom-red" />
+                          <path d={buildPath(2.2)} className="loom-wire loom-black" />
+                        </>
+                      );
+                    })()}
+                  </svg>
                 </div>
               </div>
             </div>
