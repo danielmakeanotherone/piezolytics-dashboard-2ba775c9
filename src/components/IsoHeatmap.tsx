@@ -47,12 +47,16 @@ export function IsoHeatmap({ stats }: Props) {
       // Each tile: line exits midpoint diagonally up-right, then bends
       // horizontally to the right where the dot + label sit. Uniform.
       const next: Anchor[] = tiles.map(t => {
-        const sx = t.cx;
-        const sy = t.cy;
-        // 45° up-LEFT out of the tile, then horizontally further left to the dot/label
-        const bx = sx - OUT_LEN * Math.SQRT1_2;
+        // Tiles 1 & 3 (index 0, 2) -> bend right; Tiles 2 & 4 (index 1, 3) -> bend left
+        const goRight = t.i % 2 === 0;
+        const sign = goRight ? 1 : -1;
+        // Start at the midpoint of the opposite side (left side for right-going, right side for left-going)
+        const sx = t.cx - sign * OUT_LEN * Math.SQRT1_2;
+        const sy = t.cy - OUT_LEN * Math.SQRT1_2 * 0 + 0; // start vertically centered
+        // Diagonal up segment of uniform length OUT_LEN, then horizontal RIGHT_LEN to the dot
+        const bx = sx + sign * OUT_LEN * Math.SQRT1_2;
         const by = sy - OUT_LEN * Math.SQRT1_2;
-        const dx = bx - RIGHT_LEN;
+        const dx = bx + sign * RIGHT_LEN;
         const dy = by;
         return { sx, sy, bx, by, dx, dy, index: t.i };
       });
@@ -164,6 +168,7 @@ export function IsoHeatmap({ stats }: Props) {
       </svg>
 
       {anchors.map((a) => {
+        const goRight = a.index % 2 === 0;
         return (
           <div
             key={a.index}
@@ -171,7 +176,7 @@ export function IsoHeatmap({ stats }: Props) {
             style={{
               left: a.dx,
               top: a.dy,
-              transform: `translate(calc(-100% - 8px), -50%)`,
+              transform: goRight ? `translate(8px, -50%)` : `translate(calc(-100% - 8px), -50%)`,
             }}
           >
             <span className="iso-tag-label">Tile # {String(a.index + 1).padStart(2, "0")}</span>
