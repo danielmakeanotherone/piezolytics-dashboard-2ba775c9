@@ -62,8 +62,11 @@ export function IsoHeatmap({ stats }: Props) {
         [rightTile.i, "right"],
       ]);
 
-      const margin = 34;
-      const lineLength = 78;
+      const margin = 22;
+      const lineLength = 46;
+      const tagWidth = 124;
+      const tagHeight = 34;
+      const tagGap = 18;
       const lineAngle = 30 * (Math.PI / 180);
       const lineDx = Math.cos(lineAngle) * lineLength;
       const lineDy = Math.sin(lineAngle) * lineLength;
@@ -80,42 +83,47 @@ export function IsoHeatmap({ stats }: Props) {
         { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity },
       );
 
+      const centerX = (bbox.left + bbox.right) / 2;
+      const topTagY = Math.max(gutter + tagHeight / 2, bbox.top - tagGap - tagHeight / 2);
+      const bottomTagY = Math.min(stageRect.height - gutter - tagHeight / 2, bbox.bottom + tagGap + tagHeight / 2);
+
+      const makeTopCallout = (tile: (typeof tiles)[number]): CalloutLayout => {
+        const toLeft = tile.cx < centerX;
+        const tagY = topTagY;
+        if (toLeft) {
+          const tagX = clamp(tile.cx - 20, gutter + tagWidth, stageRect.width - gutter);
+          return { i: tile.i, dotX: tagX - lineDx, dotY: tagY - lineDy, lineX: tagX, lineY: tagY, tagX, tagY, side: "right" };
+        }
+        const tagX = clamp(tile.cx + 20, gutter, stageRect.width - gutter - tagWidth);
+        return { i: tile.i, dotX: tagX + tagWidth + lineDx, dotY: tagY - lineDy, lineX: tagX + tagWidth, lineY: tagY, tagX, tagY, side: "left" };
+      };
+
       const next = tiles.map((tile) => {
         const where = placement.get(tile.i) ?? "left";
-        let dotX: number;
-        let dotY: number;
-        let lineDir: 1 | -1 = 1;
-        let lineYDir: 1 | -1 = -1;
 
         if (where === "top") {
-          dotX = tile.cx;
-          dotY = bbox.top - margin;
-          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? -1 : 1;
-          lineYDir = -1;
+          return makeTopCallout(tile);
         } else if (where === "bottom") {
-          dotX = tile.cx;
-          dotY = bbox.bottom + margin;
-          lineDir = tile.cx < (bbox.left + bbox.right) / 2 ? -1 : 1;
-          lineYDir = 1;
+          const tagY = bottomTagY;
+          if (tagY - tagHeight / 2 <= bbox.bottom + tagGap / 2) return makeTopCallout(tile);
+          const toLeft = tile.cx < centerX;
+          if (toLeft) {
+            const tagX = clamp(tile.cx - 18, gutter + tagWidth, stageRect.width - gutter);
+            return { i: tile.i, dotX: tagX - lineDx, dotY: tagY + lineDy, lineX: tagX, lineY: tagY, tagX, tagY, side: "right" };
+          }
+          const tagX = clamp(tile.cx + 18, gutter, stageRect.width - gutter - tagWidth);
+          return { i: tile.i, dotX: tagX + tagWidth + lineDx, dotY: tagY + lineDy, lineX: tagX + tagWidth, lineY: tagY, tagX, tagY, side: "left" };
         } else if (where === "right") {
-          dotX = bbox.right + margin;
-          dotY = tile.cy;
-          lineDir = 1;
-          lineYDir = -1;
-        } else {
-          dotX = bbox.left - margin;
-          dotY = tile.cy;
-          lineDir = -1;
-          lineYDir = -1;
+          const tagX = bbox.right + tagGap;
+          if (tagX + tagWidth + lineLength + margin > stageRect.width - gutter) return makeTopCallout(tile);
+          const tagY = clamp(tile.cy, gutter + tagHeight / 2, stageRect.height - gutter - tagHeight / 2);
+          return { i: tile.i, dotX: tagX + tagWidth + lineLength, dotY: tagY, lineX: tagX + tagWidth, lineY: tagY, tagX, tagY, side: "left" };
         }
 
-        dotX = clamp(dotX, gutter, stageRect.width - gutter);
-        dotY = clamp(dotY, gutter, stageRect.height - gutter);
-
-        const lineX = clamp(dotX + lineDir * lineDx, gutter, stageRect.width - gutter);
-        const lineY = clamp(dotY + lineYDir * lineDy, gutter + 16, stageRect.height - gutter - 16);
-        const side: "left" | "right" = lineDir === 1 ? "left" : "right";
-        return { i: tile.i, dotX, dotY, lineX, lineY, tagX: lineX, tagY: lineY, side };
+        const tagX = bbox.left - tagGap - tagWidth;
+        if (tagX - lineLength - margin < gutter) return makeTopCallout(tile);
+        const tagY = clamp(tile.cy, gutter + tagHeight / 2, stageRect.height - gutter - tagHeight / 2);
+        return { i: tile.i, dotX: tagX - lineLength, dotY: tagY, lineX: tagX, lineY: tagY, tagX, tagY, side: "left" };
       });
 
       setCallouts(next);
