@@ -62,7 +62,7 @@ export function IsoHeatmap({ stats }: Props) {
         [rightTile.i, "right"],
       ]);
 
-      const margin = 16;
+      const margin = 38;
       const lineLength = 74;
       const lineAngle = 30 * (Math.PI / 180);
       const lineDx = Math.cos(lineAngle) * lineLength;
