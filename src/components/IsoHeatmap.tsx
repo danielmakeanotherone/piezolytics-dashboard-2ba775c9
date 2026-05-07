@@ -6,15 +6,17 @@ interface Props {
 }
 
 interface Anchor {
-  sx: number;
+  sx: number;  // start at tile midpoint
   sy: number;
-  dx: number;
+  bx: number;  // bend point
+  by: number;
+  dx: number;  // dot/label point
   dy: number;
-  dir: "up" | "down" | "left" | "right";
   index: number;
 }
 
-const LEADER_LEN = 48; // uniform leader length for every tile
+const OUT_LEN = 56;   // uniform outward distance from tile center to bend
+const RIGHT_LEN = 64; // uniform horizontal length from bend to dot
 
 export function IsoHeatmap({ stats }: Props) {
   const maxCount = Math.max(1, stats.maxCount);
@@ -42,35 +44,17 @@ export function IsoHeatmap({ stats }: Props) {
 
       if (tiles.length === 0) return;
 
-      // In the iso-rotated 2x2 grid, tiles form a diamond. Find the
-      // extreme tile in each axial direction so each gets a unique side.
-      const top = tiles.reduce((a, b) => (b.cy < a.cy ? b : a));
-      const bottom = tiles.reduce((a, b) => (b.cy > a.cy ? b : a));
-      const left = tiles.reduce((a, b) => (b.cx < a.cx ? b : a));
-      const right = tiles.reduce((a, b) => (b.cx > a.cx ? b : a));
-
-      const dirByIndex = new Map<number, Anchor["dir"]>();
-      dirByIndex.set(top.i, "up");
-      dirByIndex.set(bottom.i, "down");
-      // left/right may collide with top/bottom if not yet assigned
-      if (!dirByIndex.has(left.i)) dirByIndex.set(left.i, "left");
-      if (!dirByIndex.has(right.i)) dirByIndex.set(right.i, "right");
-      // Fallback: assign remaining tiles by exclusion
-      const remainingDirs: Anchor["dir"][] = (["up", "down", "left", "right"] as const)
-        .filter(d => ![...dirByIndex.values()].includes(d));
-      tiles.forEach(t => {
-        if (!dirByIndex.has(t.i)) dirByIndex.set(t.i, remainingDirs.shift() || "up");
-      });
-
+      // Each tile: line exits midpoint diagonally up-right, then bends
+      // horizontally to the right where the dot + label sit. Uniform.
       const next: Anchor[] = tiles.map(t => {
-        const dir = dirByIndex.get(t.i)!;
-        const tileHalf = 70; // approx half-size of tile bbox in stage coords
-        let sx = t.cx, sy = t.cy, dx = t.cx, dy = t.cy;
-        if (dir === "up")    { sy = t.cy - tileHalf; dy = sy - LEADER_LEN; }
-        if (dir === "down")  { sy = t.cy + tileHalf; dy = sy + LEADER_LEN; }
-        if (dir === "left")  { sx = t.cx - tileHalf; dx = sx - LEADER_LEN; }
-        if (dir === "right") { sx = t.cx + tileHalf; dx = sx + LEADER_LEN; }
-        return { sx, sy, dx, dy, dir, index: t.i };
+        const sx = t.cx;
+        const sy = t.cy;
+        // 45° up-right out of the tile
+        const bx = sx + OUT_LEN * Math.SQRT1_2;
+        const by = sy - OUT_LEN * Math.SQRT1_2;
+        const dx = bx + RIGHT_LEN;
+        const dy = by;
+        return { sx, sy, bx, by, dx, dy, index: t.i };
       });
       setAnchors(next);
     };
