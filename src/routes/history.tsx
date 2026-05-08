@@ -38,21 +38,21 @@ function HistoryPage() {
     return m;
   }, [tiles]);
 
-  // Build chronological list of registered-tile events to compute transitions + dwell
+  // Each event is one VISIT on a tile; direction is which side (A or B) was stepped on first.
   const enriched = useMemo(() => {
-    const chrono = tagged
+    return tagged
       .filter((e) => registeredNums.has(e.tileNumber))
-      .sort((a, b) => a.epoch - b.epoch);
-    return chrono.map((e, i) => {
-      const prev = i > 0 ? chrono[i - 1] : null;
-      const fromTile = prev ? prev.tileNumber : null;
-      const dwellMs = prev ? e.epoch - prev.epoch : null;
-      return { ...e, fromTile, toTile: e.tileNumber, dwellMs };
-    });
+      .map((e) => {
+        const dir: "A→B" | "B→A" | null =
+          e.firstTile === 1 ? "A→B" : e.firstTile === 2 ? "B→A" : null;
+        const dwellMs =
+          (e.dwellAMs ?? 0) + (e.dwellBMs ?? 0) || null;
+        return { ...e, direction: dir, dwellMs };
+      });
   }, [tagged, registeredNums]);
 
   const rows = enriched
-    .filter((e) => filter === "all" || e.toTile === filter || e.fromTile === filter)
+    .filter((e) => filter === "all" || e.tileNumber === filter)
     .sort((a, b) => b.epoch - a.epoch);
 
   const perTileCounts = useMemo(() => {
