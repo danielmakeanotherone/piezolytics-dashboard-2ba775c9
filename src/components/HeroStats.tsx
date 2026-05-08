@@ -1,14 +1,25 @@
 import { ZONE_LABELS } from "@/lib/floor-data";
 import type { Stats } from "@/lib/floor-data";
 
-export function HeroStats({ stats }: { stats: Stats }) {
+export function HeroStats({ stats, userName }: { stats: Stats; userName?: string }) {
   const cards: { label: string; value: string; color: string }[] = [];
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
 
   return (
     <section className="flex items-end justify-between gap-8 py-8">
       <div>
-        <h1 className="font-display text-text" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1 }}>
-          Floor Analytics
+        {userName && (
+          <div className="text-text3 text-[12px] uppercase tracking-[0.18em] mb-2">
+            {greeting}
+          </div>
+        )}
+        <h1 className="font-display text-text" style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.1 }}>
+          {userName ? <>Hey {userName}, <span style={{ color: "var(--acc)" }}>welcome back</span>!</> : "Floor Analytics"}
         </h1>
         <p className="text-text3 text-sm mt-2">
           Live piezo sensor monitoring · {stats.activeZones} of 4 zones active
