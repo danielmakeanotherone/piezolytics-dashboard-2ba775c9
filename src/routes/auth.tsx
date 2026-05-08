@@ -29,12 +29,17 @@ function AuthPage() {
 
   useEffect(() => {
     if (!session?.user) return;
-    const u = session.user;
-    const created = u.created_at ? new Date(u.created_at).getTime() : 0;
-    const lastSignIn = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : 0;
-    // First-time sign-in (or new account): created and last sign-in within ~30s
-    const isNew = !lastSignIn || Math.abs(lastSignIn - created) < 30_000;
-    navigate({ to: isNew ? "/zones" : "/dashboard" });
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("user_tiles")
+        .select("id", { count: "exact", head: true });
+      if (cancelled) return;
+      navigate({ to: count && count > 0 ? "/dashboard" : "/zones" });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [session, navigate]);
 
   const submit = async (e: React.FormEvent) => {
