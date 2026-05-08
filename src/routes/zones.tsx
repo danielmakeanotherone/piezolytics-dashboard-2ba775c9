@@ -6,7 +6,7 @@ import { ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
 export const Route = createFileRoute("/zones")({
   head: () => ({
     meta: [
-      { title: "Zones — Piezolytics" },
+      { title: "Tile Manager — Piezolytics" },
       { name: "description", content: "Per-zone breakdown of floor traffic." },
     ],
   }),
