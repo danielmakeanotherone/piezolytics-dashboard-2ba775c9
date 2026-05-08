@@ -352,30 +352,61 @@ function TileDetail({
           </div>
         </div>
 
-        <div className="iso-heatgrid">
-          <div className="iso-heatstrip-label">By {cfg.unit}</div>
-          <div
-            className="iso-heatstrip"
-            style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
-          >
-            {series.map((v, i) => (
-              <span
-                key={i}
-                className="iso-heatcell"
-                style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
-                title={`${cfg.labels(i) || `#${i + 1}`}: ${Math.round(v)}`}
-              />
-            ))}
+        {range === "Month" ? (
+          <div className="iso-heatgrid iso-heatcal">
+            <div className="iso-heatstrip-label">By {cfg.unit}</div>
+            <div className="iso-heatcal-body">
+              <div className="iso-heatcal-rowlabels">
+                {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
+                  <span key={d} className="iso-heatstrip-tick">{d}</span>
+                ))}
+              </div>
+              <div
+                className="iso-heatcal-cells"
+                style={{ gridTemplateColumns: `repeat(${cfg.cols}, 1fr)`, gridTemplateRows: `repeat(${cfg.rows}, 1fr)` } as CSSProperties}
+              >
+                {series.map((v, i) => {
+                  const cols = cfg.cols!;
+                  const row = Math.floor(i / cols);
+                  const col = i % cols;
+                  return (
+                    <span
+                      key={i}
+                      className="iso-heatcell"
+                      style={{ "--t": (v / heatMax).toFixed(3), gridColumn: col + 1, gridRow: row + 1 } as CSSProperties}
+                      title={`${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][row]} · W${col + 1}: ${Math.round(v)}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div
-            className="iso-heatstrip-axis"
-            style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
-          >
-            {series.map((_, i) => (
-              <span key={i} className="iso-heatstrip-tick">{cfg.labels(i)}</span>
-            ))}
+        ) : (
+          <div className="iso-heatgrid">
+            <div className="iso-heatstrip-label">By {cfg.unit}</div>
+            <div
+              className="iso-heatstrip"
+              style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
+            >
+              {series.map((v, i) => (
+                <span
+                  key={i}
+                  className="iso-heatcell"
+                  style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
+                  title={`${cfg.labels(i) || `#${i + 1}`}: ${Math.round(v)}`}
+                />
+              ))}
+            </div>
+            <div
+              className="iso-heatstrip-axis"
+              style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
+            >
+              {series.map((_, i) => (
+                <span key={i} className="iso-heatstrip-tick">{cfg.labels(i)}</span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="iso-heatlegend">
           <span className="iso-heatlegend-label">Less</span>
