@@ -181,7 +181,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                             display: "inline-block",
                           }}
                         />
-                        Tile #{String(tileNumbers[i]).padStart(2, "0")}
+                        <span className="font-mono">tile_{tileNumbers[i]}</span>
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
                         {active ? `${stats.counts[z]} hits` : "idle"}
