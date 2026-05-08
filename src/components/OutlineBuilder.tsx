@@ -47,26 +47,33 @@ interface ElementDef {
   type: OutlineElementType;
   label: string;
   icon: React.ElementType;
-  w: number;
-  h: number;
-  bg: string;
-  border: string;
-  text: string;
+  /** Theme-aligned tint strength 0-1 (mixed with --acc) */
+  tint: number;
 }
 
 export const OUTLINE_DEFS: ElementDef[] = [
-  { type: "wall", label: "Wall", icon: RectangleHorizontal, w: 1, h: 1, bg: "rgba(120,110,100,0.55)", border: "rgba(160,150,140,0.85)", text: "#cdbfb0" },
-  { type: "door", label: "Door", icon: DoorOpen, w: 2, h: 1, bg: "rgba(80,160,120,0.35)", border: "rgba(80,200,140,0.9)", text: "#7fdab2" },
-  { type: "aisle", label: "Aisle", icon: Columns3, w: 1, h: 4, bg: "rgba(80,140,220,0.20)", border: "rgba(120,170,240,0.7)", text: "#9fc2f5" },
-  { type: "checkout", label: "Checkout", icon: ShoppingCart, w: 2, h: 2, bg: "rgba(230,160,70,0.30)", border: "rgba(245,180,90,0.85)", text: "#f0c389" },
-  { type: "shelving", label: "Shelving", icon: LayoutGrid, w: 1, h: 3, bg: "rgba(150,110,210,0.22)", border: "rgba(170,130,230,0.7)", text: "#c0a3e8" },
-  { type: "fridge", label: "Fridge", icon: Snowflake, w: 1, h: 3, bg: "rgba(70,180,200,0.22)", border: "rgba(100,200,220,0.7)", text: "#9adfeb" },
-  { type: "fitting", label: "Fitting", icon: Armchair, w: 2, h: 2, bg: "rgba(190,110,210,0.22)", border: "rgba(210,130,230,0.7)", text: "#d3a3e8" },
-  { type: "storage", label: "Storage", icon: Package, w: 3, h: 2, bg: "rgba(120,130,150,0.22)", border: "rgba(150,160,180,0.7)", text: "#bfc6d4" },
-  { type: "room", label: "Room", icon: Home, w: 4, h: 4, bg: "rgba(220,120,170,0.15)", border: "rgba(230,140,180,0.55)", text: "#e9b3cd" },
-  { type: "custom", label: "Custom", icon: Box, w: 2, h: 2, bg: "rgba(240,150,90,0.20)", border: "rgba(250,170,110,0.7)", text: "#f3c096" },
-  { type: "tile", label: "Tile", icon: Cpu, w: 1, h: 1, bg: "rgba(200,168,118,0.30)", border: "rgba(220,188,138,0.95)", text: "#e8caa0" },
+  { type: "wall", label: "Wall", icon: RectangleHorizontal, tint: 0.55 },
+  { type: "door", label: "Door", icon: DoorOpen, tint: 0.4 },
+  { type: "aisle", label: "Aisle", icon: Columns3, tint: 0.18 },
+  { type: "checkout", label: "Checkout", icon: ShoppingCart, tint: 0.32 },
+  { type: "shelving", label: "Shelving", icon: LayoutGrid, tint: 0.22 },
+  { type: "fridge", label: "Fridge", icon: Snowflake, tint: 0.26 },
+  { type: "fitting", label: "Fitting", icon: Armchair, tint: 0.24 },
+  { type: "storage", label: "Storage", icon: Package, tint: 0.2 },
+  { type: "room", label: "Room", icon: Home, tint: 0.14 },
+  { type: "custom", label: "Custom", icon: Box, tint: 0.28 },
+  { type: "tile", label: "Tile", icon: Cpu, tint: 0.5 },
 ];
+
+const elStyle = (def: ElementDef, selected = false): CSSProperties => ({
+  background: `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`,
+  border: `1.5px solid ${
+    selected
+      ? "var(--acc)"
+      : `color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`
+  }`,
+  color: "var(--text)",
+});
 
 const getDef = (t: OutlineElementType) => OUTLINE_DEFS.find((d) => d.type === t)!;
 
@@ -87,14 +94,18 @@ interface Props {
   readOnly?: boolean;
 }
 
+type DragMode =
+  | { kind: "move"; id: string; offX: number; offY: number }
+  | { kind: "resize"; id: string; handle: "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w"; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
+
 export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, saving, readOnly }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<OutlineElementType | null>(null);
   const [pickTileNum, setPickTileNum] = useState<number | null>(null);
   const [hover, setHover] = useState<{ col: number; row: number } | null>(null);
-  const [dragging, setDragging] = useState<{ id: string; offX: number; offY: number } | null>(null);
+  const [drag, setDrag] = useState<DragMode | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Tiles already placed on the canvas
   const placedTileNums = useMemo(
     () => new Set(elements.filter((e) => e.type === "tile" && e.tileNumber != null).map((e) => e.tileNumber!)),
     [elements],
@@ -128,7 +139,6 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
     if (col < 0 || row < 0 || col + w > OUTLINE_COLS || row + h > OUTLINE_ROWS) return false;
     for (const el of elements) {
       if (el.id === excludeId) continue;
-      // tiles are allowed to overlap nothing — keep simple: no overlap at all
       if (overlap({ x: col, y: row, w, h }, el)) return false;
     }
     return true;
@@ -136,51 +146,109 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
 
   const handleCellClick = (col: number, row: number) => {
     if (readOnly || !tool) return;
-    const def = getDef(tool);
-    const startCol = Math.max(0, Math.min(col, OUTLINE_COLS - def.w));
-    const startRow = Math.max(0, Math.min(row, OUTLINE_ROWS - def.h));
-    if (!canPlace(startCol, startRow, def.w, def.h)) return;
+    if (!canPlace(col, row, 1, 1)) return;
     if (tool === "tile") {
-      if (pickTileNum == null) return;
-      if (placedTileNums.has(pickTileNum)) return;
+      if (pickTileNum == null || placedTileNums.has(pickTileNum)) return;
       const reg = registeredTiles.find((t) => t.tile_number === pickTileNum);
-      const name = reg?.label || `Tile ${pickTileNum}`;
       onChange([
         ...elements,
-        { id: genId(), type: "tile", x: startCol, y: startRow, w: 1, h: 1, name, tileNumber: pickTileNum },
+        { id: genId(), type: "tile", x: col, y: row, w: 1, h: 1, name: reg?.label || `Tile ${pickTileNum}`, tileNumber: pickTileNum },
       ]);
       setPickTileNum(null);
       setTool(null);
       return;
     }
+    const def = getDef(tool);
     const count = elements.filter((e) => e.type === tool).length + 1;
     onChange([
       ...elements,
-      { id: genId(), type: tool, x: startCol, y: startRow, w: def.w, h: def.h, name: `${def.label} ${count}` },
+      { id: genId(), type: tool, x: col, y: row, w: 1, h: 1, name: `${def.label} ${count}` },
     ]);
     setTool(null);
   };
 
-  const handleDragStart = (e: React.MouseEvent, el: OutlineElement) => {
+  const startMove = (e: React.MouseEvent, el: OutlineElement) => {
     if (readOnly || tool) return;
     e.preventDefault();
     e.stopPropagation();
+    setSelectedId(el.id);
     const f = mouseToFractional(e.clientX, e.clientY);
     if (!f) return;
-    setDragging({ id: el.id, offX: f.x - el.x, offY: f.y - el.y });
+    setDrag({ kind: "move", id: el.id, offX: f.x - el.x, offY: f.y - el.y });
+  };
+
+  const startResize = (e: React.MouseEvent, el: OutlineElement, handle: DragMode extends { kind: "resize"; handle: infer H } ? H : never) => {
+    if (readOnly || tool) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedId(el.id);
+    const f = mouseToFractional(e.clientX, e.clientY);
+    if (!f) return;
+    setDrag({
+      kind: "resize",
+      id: el.id,
+      handle,
+      startX: el.x,
+      startY: el.y,
+      startW: el.w,
+      startH: el.h,
+      anchorFx: f.x,
+      anchorFy: f.y,
+    });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (dragging) {
+    if (drag) {
       const f = mouseToFractional(e.clientX, e.clientY);
       if (!f) return;
-      const el = elements.find((x) => x.id === dragging.id);
+      const el = elements.find((x) => x.id === drag.id);
       if (!el) return;
-      const nx = Math.max(0, Math.min(Math.round(f.x - dragging.offX), OUTLINE_COLS - el.w));
-      const ny = Math.max(0, Math.min(Math.round(f.y - dragging.offY), OUTLINE_ROWS - el.h));
-      if (nx === el.x && ny === el.y) return;
-      if (!canPlace(nx, ny, el.w, el.h, el.id)) return;
-      onChange(elements.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny } : x)));
+
+      if (drag.kind === "move") {
+        const nx = Math.max(0, Math.min(Math.round(f.x - drag.offX), OUTLINE_COLS - el.w));
+        const ny = Math.max(0, Math.min(Math.round(f.y - drag.offY), OUTLINE_ROWS - el.h));
+        if (nx === el.x && ny === el.y) return;
+        if (!canPlace(nx, ny, el.w, el.h, el.id)) return;
+        onChange(elements.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny } : x)));
+        return;
+      }
+
+      // resize
+      const { handle, startX, startY, startW, startH } = drag;
+      let nx = startX;
+      let ny = startY;
+      let nw = startW;
+      let nh = startH;
+      const right = startX + startW;
+      const bottom = startY + startH;
+
+      if (handle.includes("e")) nw = Math.max(1, Math.round(f.x) - startX);
+      if (handle.includes("s")) nh = Math.max(1, Math.round(f.y) - startY);
+      if (handle.includes("w")) {
+        const newX = Math.min(right - 1, Math.round(f.x));
+        nx = Math.max(0, newX);
+        nw = right - nx;
+      }
+      if (handle.includes("n")) {
+        const newY = Math.min(bottom - 1, Math.round(f.y));
+        ny = Math.max(0, newY);
+        nh = bottom - ny;
+      }
+
+      // Tiles stay 1x1
+      if (el.type === "tile") {
+        nw = 1;
+        nh = 1;
+      }
+
+      // Bounds
+      if (nx + nw > OUTLINE_COLS) nw = OUTLINE_COLS - nx;
+      if (ny + nh > OUTLINE_ROWS) nh = OUTLINE_ROWS - ny;
+      if (nw < 1 || nh < 1) return;
+
+      if (nx === el.x && ny === el.y && nw === el.w && nh === el.h) return;
+      if (!canPlace(nx, ny, nw, nh, el.id)) return;
+      onChange(elements.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny, w: nw, h: nh } : x)));
       return;
     }
     if (tool) {
@@ -189,31 +257,26 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
     }
   };
 
-  const handleMouseUp = () => setDragging(null);
+  const handleMouseUp = () => setDrag(null);
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (readOnly) return;
     onChange(elements.filter((x) => x.id !== id));
+    if (selectedId === id) setSelectedId(null);
   };
 
-  const hoverDef = tool ? getDef(tool) : null;
   const hoverPreview =
-    hover && hoverDef
+    hover && tool
       ? {
-          x: Math.max(0, Math.min(hover.col, OUTLINE_COLS - hoverDef.w)),
-          y: Math.max(0, Math.min(hover.row, OUTLINE_ROWS - hoverDef.h)),
-          w: hoverDef.w,
-          h: hoverDef.h,
-          ok: canPlace(
-            Math.max(0, Math.min(hover.col, OUTLINE_COLS - hoverDef.w)),
-            Math.max(0, Math.min(hover.row, OUTLINE_ROWS - hoverDef.h)),
-            hoverDef.w,
-            hoverDef.h,
-          ),
+          x: hover.col,
+          y: hover.row,
+          ok: canPlace(hover.col, hover.row, 1, 1),
         }
       : null;
+
+  const selected = elements.find((e) => e.id === selectedId) || null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -231,12 +294,14 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
               onClick={() => setTool(active ? null : d.type)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors disabled:opacity-50"
               style={{
-                background: active ? d.bg : "var(--surf2)",
-                border: `1px solid ${active ? d.border : "var(--bord2)"}`,
-                color: active ? d.text : "var(--text2)",
+                background: active
+                  ? `color-mix(in srgb, var(--acc) ${d.tint * 100}%, var(--surf2))`
+                  : "var(--surf2)",
+                border: `1px solid ${active ? "var(--acc)" : "var(--bord2)"}`,
+                color: active ? "var(--text)" : "var(--text2)",
               }}
             >
-              <Icon size={13} style={{ color: d.text }} />
+              <Icon size={13} style={{ color: active ? "var(--acc)" : "var(--text3)" }} />
               {d.label}
             </button>
           );
@@ -259,7 +324,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
               onClick={onSave}
               disabled={saving}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-50"
-              style={{ background: "var(--acc)", color: "#1a1611" }}
+              style={{ background: "var(--acc)", color: "var(--bg)" }}
             >
               <Save size={13} /> {saving ? "Saving…" : "Save layout"}
             </button>
@@ -267,16 +332,14 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
         </div>
       </div>
 
-      {/* Tile picker (when placing a tile) */}
+      {/* Tile picker */}
       {tool === "tile" && (
         <div className="panel p-3">
           <div className="text-text3 text-[11px] uppercase tracking-wider mb-2">
             Pick a registered tile to place
           </div>
           {registeredTiles.length === 0 ? (
-            <div className="text-text3 text-sm">
-              No tiles registered. Add some in Tile Manager first.
-            </div>
+            <div className="text-text3 text-sm">No tiles registered. Add some in Tile Manager first.</div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {registeredTiles.map((t) => {
@@ -290,7 +353,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
                     onClick={() => setPickTileNum(active ? null : t.tile_number)}
                     className="px-2.5 py-1.5 rounded-md text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      background: active ? "rgba(200,168,118,0.25)" : "var(--surf2)",
+                      background: active ? "color-mix(in srgb, var(--acc) 25%, var(--surf2))" : "var(--surf2)",
                       border: `1px solid ${active ? "var(--acc)" : "var(--bord2)"}`,
                       color: active ? "var(--acc)" : "var(--text2)",
                     }}
@@ -323,6 +386,9 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           setHover(null);
           handleMouseUp();
         }}
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) setSelectedId(null);
+        }}
       >
         {/* Grid */}
         <div
@@ -339,8 +405,8 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
                 onMouseEnter={() => tool && setHover({ col: c, row: r })}
                 onClick={() => handleCellClick(c, r)}
                 style={{
-                  borderRight: "1px solid rgba(255,255,255,0.04)",
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  borderRight: "1px solid color-mix(in srgb, var(--bord2) 40%, transparent)",
+                  borderBottom: "1px solid color-mix(in srgb, var(--bord2) 40%, transparent)",
                 }}
               />
             )),
@@ -354,10 +420,12 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
             style={{
               left: `${(hoverPreview.x / OUTLINE_COLS) * 100}%`,
               top: `${(hoverPreview.y / OUTLINE_ROWS) * 100}%`,
-              width: `${(hoverPreview.w / OUTLINE_COLS) * 100}%`,
-              height: `${(hoverPreview.h / OUTLINE_ROWS) * 100}%`,
-              background: hoverPreview.ok ? "rgba(120,200,140,0.18)" : "rgba(220,90,90,0.20)",
-              border: `1.5px dashed ${hoverPreview.ok ? "rgba(120,200,140,0.7)" : "rgba(220,90,90,0.7)"}`,
+              width: `${(1 / OUTLINE_COLS) * 100}%`,
+              height: `${(1 / OUTLINE_ROWS) * 100}%`,
+              background: hoverPreview.ok
+                ? "color-mix(in srgb, var(--acc) 22%, transparent)"
+                : "color-mix(in srgb, #c44 30%, transparent)",
+              border: `1.5px dashed ${hoverPreview.ok ? "var(--acc)" : "#c44"}`,
             }}
           />
         )}
@@ -366,32 +434,70 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
         {elements.map((el) => {
           const def = getDef(el.type);
           const Icon = def.icon;
+          const isSelected = selectedId === el.id;
+          const minDim = Math.min(el.w, el.h);
+          const showLabel = isSelected && (el.w >= 3 || el.h >= 2);
+          const iconSize = Math.max(10, Math.min(18, minDim * 10 + 4));
           return (
             <div
               key={el.id}
-              onMouseDown={(e) => handleDragStart(e, el)}
+              onMouseDown={(e) => startMove(e, el)}
               onContextMenu={(e) => handleDelete(e, el.id)}
-              className="absolute flex items-center justify-center gap-1 group"
-              style={
-                {
-                  left: `${(el.x / OUTLINE_COLS) * 100}%`,
-                  top: `${(el.y / OUTLINE_ROWS) * 100}%`,
-                  width: `${(el.w / OUTLINE_COLS) * 100}%`,
-                  height: `${(el.h / OUTLINE_ROWS) * 100}%`,
-                  background: def.bg,
-                  border: `1.5px solid ${def.border}`,
-                  borderRadius: 4,
-                  color: def.text,
-                  cursor: readOnly ? "default" : tool ? "crosshair" : "grab",
-                } as CSSProperties
-              }
-              title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""} (right-click to delete)`}
+              className="absolute flex items-center justify-center group"
+              style={{
+                left: `${(el.x / OUTLINE_COLS) * 100}%`,
+                top: `${(el.y / OUTLINE_ROWS) * 100}%`,
+                width: `${(el.w / OUTLINE_COLS) * 100}%`,
+                height: `${(el.h / OUTLINE_ROWS) * 100}%`,
+                ...elStyle(def, isSelected),
+                borderRadius: 4,
+                cursor: readOnly ? "default" : tool ? "crosshair" : "grab",
+                zIndex: isSelected ? 10 : 1,
+              }}
+              title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""}`}
             >
-              <Icon size={Math.min(14, Math.min(el.w, el.h) * 8 + 6)} />
-              {(el.w >= 2 || el.h >= 2 || el.type === "tile") && (
-                <span className="text-[10px] font-medium truncate px-1">
+              <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.9 }} />
+              {showLabel && (
+                <span className="text-[10px] font-medium truncate px-1 ml-1" style={{ color: "var(--text)" }}>
                   {el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name}
                 </span>
+              )}
+              {el.type === "tile" && (el.w >= 1 && el.h >= 1) && el.tileNumber != null && !showLabel && (
+                <span
+                  className="absolute font-mono"
+                  style={{
+                    bottom: 1,
+                    right: 2,
+                    fontSize: 8,
+                    color: "var(--acc)",
+                    lineHeight: 1,
+                  }}
+                >
+                  {el.tileNumber}
+                </span>
+              )}
+
+              {/* Resize handles (only when selected & not a tile) */}
+              {isSelected && !readOnly && el.type !== "tile" && (
+                <>
+                  {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
+                    const pos: CSSProperties = { position: "absolute", width: 8, height: 8, background: "var(--acc)", border: "1px solid var(--bg)", borderRadius: 2 };
+                    const cur: Record<string, string> = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
+                    if (h.includes("n")) pos.top = -4;
+                    if (h.includes("s")) pos.bottom = -4;
+                    if (h.includes("w")) pos.left = -4;
+                    if (h.includes("e")) pos.right = -4;
+                    if (h === "n" || h === "s") { pos.left = "50%"; pos.transform = "translateX(-50%)"; }
+                    if (h === "e" || h === "w") { pos.top = "50%"; pos.transform = "translateY(-50%)"; }
+                    return (
+                      <div
+                        key={h}
+                        onMouseDown={(e) => startResize(e, el, h)}
+                        style={{ ...pos, cursor: cur[h], zIndex: 11 }}
+                      />
+                    );
+                  })}
+                </>
               )}
             </div>
           );
@@ -399,7 +505,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
       </div>
 
       <p className="text-text3 text-[11px]">
-        Click a tool, then click the canvas to place. Drag to reposition. Right-click to delete.
+        Click a tool, then a cell to drop a 1×1 box. Click an element to select, then drag handles to resize. Right-click to delete.
       </p>
     </div>
   );
