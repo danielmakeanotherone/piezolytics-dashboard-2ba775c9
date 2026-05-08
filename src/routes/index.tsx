@@ -98,6 +98,36 @@ function Landing() {
       <div id="demo" style={{ scrollMarginTop: 58 }}>
         <Dashboard demo hideNav />
       </div>
+
+      <section className="max-w-[1400px] mx-auto px-6 py-24 text-center flex flex-col items-center">
+        <h2
+          className="font-display"
+          style={{ fontSize: 56, fontWeight: 600, letterSpacing: -0.6, lineHeight: 1.05 }}
+        >
+          Ready For Your Own? <span style={{ color: "var(--acc)" }}>Let's Start!</span>
+        </h2>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-text3 mt-4">
+          Your floor, your data, in minutes
+        </p>
+        <div className="mt-7 flex items-center justify-center gap-3">
+          <Link
+            to="/auth"
+            search={{ mode: "signup" }}
+            className="px-5 py-2.5 rounded-lg text-sm font-medium"
+            style={{ background: "var(--acc)", color: "#1a1410" }}
+          >
+            Create your dashboard
+          </Link>
+          <Link
+            to="/auth"
+            search={{ mode: "login" }}
+            className="px-5 py-2.5 rounded-lg text-sm"
+            style={{ border: "1px solid var(--bord2)", color: "var(--text2)" }}
+          >
+            Go to Dashboard
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
