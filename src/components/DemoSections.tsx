@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -103,10 +103,10 @@ export function DemoHistory() {
       <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
-            History <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
+            Entries <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
           </h2>
           <p className="text-text3 text-sm mt-1">
-            Per-tile event history sourced from the simulated stream.
+            Per-tile entry history sourced from the simulated stream.
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -236,5 +236,91 @@ function FBtn({
     >
       {children}
     </button>
+  );
+}
+
+export function DemoHeatMap() {
+  const { events } = useFloorData(2000, { demo: true });
+  const tagged = useMemo(
+    () =>
+      events.map((e) => {
+        const idx = ZONE_ORDER.indexOf(e.sensor);
+        return { ...e, tileNumber: idx >= 0 ? idx + 1 : -1 };
+      }),
+    [events],
+  );
+
+  // Week buckets per demo tile
+  const cfgCount = 7;
+  const labels = (i: number) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i];
+  const matrix = useMemo(() => {
+    const now = new Date();
+    return DEMO_TILES.map((t) => {
+      const buckets = new Array<number>(cfgCount).fill(0);
+      for (const e of tagged.filter((x) => x.tileNumber === t.tile_number)) {
+        const d = new Date(e.epoch);
+        const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+        if (diffDays >= 0 && diffDays < 7) buckets[6 - diffDays]++;
+      }
+      return { tile: t, buckets };
+    });
+  }, [tagged]);
+  const heatMax = Math.max(1, ...matrix.flatMap((r) => r.buckets));
+
+  return (
+    <section className="max-w-[1400px] mx-auto px-6 pt-4 pb-12">
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
+            Heat Map <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
+          </h2>
+          <p className="text-text3 text-sm mt-1">
+            Activity intensity across each tile over the past week.
+          </p>
+        </div>
+      </div>
+      <div className="panel p-6">
+        <div className="flex flex-col gap-2">
+          {matrix.map(({ tile, buckets }) => (
+            <div key={tile.id} className="grid items-center gap-3" style={{ gridTemplateColumns: "180px 1fr 64px" }}>
+              <div className="min-w-0">
+                <div className="text-text text-sm truncate">{tile.label}</div>
+                <div className="font-mono text-text3 text-[11px]">tile_{tile.tile_number}</div>
+              </div>
+              <div className="iso-heatstrip" style={{ gridTemplateColumns: `repeat(${cfgCount}, 1fr)` } as CSSProperties}>
+                {buckets.map((v, i) => (
+                  <span
+                    key={i}
+                    className="iso-heatcell"
+                    style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
+                    title={`${labels(i)}: ${v}`}
+                  />
+                ))}
+              </div>
+              <div className="text-right font-mono text-text2 text-[12px]">
+                {buckets.reduce((s, v) => s + v, 0)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div
+          className="iso-heatstrip-axis mt-3"
+          style={{ gridTemplateColumns: `repeat(${cfgCount}, 1fr)`, marginLeft: 192, marginRight: 76 } as CSSProperties}
+        >
+          {Array.from({ length: cfgCount }).map((_, i) => (
+            <span key={i} className="iso-heatstrip-tick">{labels(i)}</span>
+          ))}
+        </div>
+        <div className="iso-heatlegend mt-4">
+          <span className="iso-heatlegend-label">Less</span>
+          <span className="iso-heatlegend-scale">
+            {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => (
+              <span key={t} className="iso-heatcell iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
+            ))}
+          </span>
+          <span className="iso-heatlegend-label">More events</span>
+        </div>
+      </div>
+    </section>
   );
 }

@@ -8,8 +8,8 @@ import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
 export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
-      { title: "History — Piezolytics" },
-      { name: "description", content: "Per-tile event log of floor sensor activity." },
+      { title: "Entries — Piezolytics" },
+      { name: "description", content: "Per-tile entry log of floor sensor activity." },
     ],
   }),
   component: HistoryPage,
@@ -71,10 +71,10 @@ function HistoryPage() {
         <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
             <h1 className="font-display text-text" style={{ fontSize: 28, fontWeight: 600 }}>
-              History
+              Entries
             </h1>
             <p className="text-text3 text-sm mt-1">
-              Event history for each tile registered in Tile Manager.
+              Entry log for each tile registered in Tile Manager.
             </p>
           </div>
           {tiles.length > 0 && (

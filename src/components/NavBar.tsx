@@ -14,7 +14,8 @@ interface Props {
 const tabs = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/zones", label: "Tile Manager" },
-  { to: "/history", label: "History" },
+  { to: "/heatmap", label: "Heat Map" },
+  { to: "/history", label: "Entries" },
 ] as const;
 
 function pillLabel(conn: ConnState, lastUpdate: number | null) {

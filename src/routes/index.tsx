@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Dashboard } from "@/components/Dashboard";
-import { DemoTileManager, DemoHistory } from "@/components/DemoSections";
+import { DemoTileManager, DemoHistory, DemoHeatMap } from "@/components/DemoSections";
 import { LogoMark } from "@/components/LogoMark";
 
-type DemoTab = "dashboard" | "zones" | "history";
+type DemoTab = "dashboard" | "zones" | "heatmap" | "history";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -110,7 +110,8 @@ function Landing() {
               [
                 { id: "dashboard", label: "Dashboard" },
                 { id: "zones", label: "Tile Manager" },
-                { id: "history", label: "History" },
+                { id: "heatmap", label: "Heat Map" },
+                { id: "history", label: "Entries" },
               ] as { id: DemoTab; label: string }[]
             ).map((t) => (
               <button
@@ -132,6 +133,7 @@ function Landing() {
         </div>
         {demoTab === "dashboard" && <Dashboard demo hideNav />}
         {demoTab === "zones" && <DemoTileManager />}
+        {demoTab === "heatmap" && <DemoHeatMap />}
         {demoTab === "history" && <DemoHistory />}
       </div>
 
