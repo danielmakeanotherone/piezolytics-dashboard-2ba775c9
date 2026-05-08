@@ -437,8 +437,8 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           const Icon = def.icon;
           const isSelected = selectedId === el.id;
           const minDim = Math.min(el.w, el.h);
-          const showLabel = isSelected && (el.w >= 3 || el.h >= 2);
-          const iconSize = Math.max(10, Math.min(18, minDim * 10 + 4));
+          const iconSize = Math.max(10, Math.min(16, minDim * 8 + 4));
+          const labelText = el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name;
           return (
             <div
               key={el.id}
