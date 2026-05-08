@@ -231,6 +231,7 @@ const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
 function TileDetail({
   index,
   tileNumber,
+  tileLabel,
   zone,
   stats,
   events,
@@ -238,6 +239,7 @@ function TileDetail({
 }: {
   index: number;
   tileNumber: number;
+  tileLabel: string;
   zone: SensorKey;
   stats: Stats;
   events: FloorEvent[];
