@@ -4,14 +4,7 @@ import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useAuthSession } from "@/hooks/use-auth";
-import {
-  bucketSparkline,
-  formatTime,
-  isTileConnected,
-  tileKey,
-  tileLabel,
-  type Tile,
-} from "@/lib/floor-data";
+import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { useEffect, useRef, useState } from "react";
 
 function Wave({ data }: { data: number[] }) {
@@ -62,18 +55,8 @@ function Wave({ data }: { data: number[] }) {
   return <div ref={wrap} style={{ width: "100%", height: 110, overflow: "hidden" }}><canvas ref={ref} style={{ display: "block" }} /></div>;
 }
 
-export function Dashboard({
-  tiles,
-  demo = false,
-  hideNav = false,
-  onLogout,
-}: {
-  tiles: Tile[];
-  demo?: boolean;
-  hideNav?: boolean;
-  onLogout?: () => void;
-}) {
-  const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(tiles, 2000, { demo });
+export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
+  const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
   const { user } = useAuthSession();
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
@@ -88,7 +71,6 @@ export function Dashboard({
 
   const peakPct = stats.total ? Math.round((stats.maxCount / stats.total) * 100) : 0;
   const lastEvent = events.length ? [...events].sort((a, b) => b.epoch - a.epoch)[0] : null;
-  const peakTile = stats.peakTile != null ? tiles.find((t) => t.number === stats.peakTile) ?? null : null;
 
   useEffect(() => {
     const updateTimeLabels = () => {
@@ -107,7 +89,7 @@ export function Dashboard({
     <div className="min-h-screen bg-bg text-text">
       {!hideNav && <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} onLogout={onLogout} />}
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
-        <HeroStats stats={stats} userName={displayName} totalTiles={tiles.length} />
+        <HeroStats stats={stats} userName={displayName} />
 
         <div className="grid items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section className="panel flex min-w-0 flex-col overflow-hidden">
@@ -132,11 +114,11 @@ export function Dashboard({
               </div>
             </div>
             <div className="px-7 pt-1 pb-2 text-text3 text-[12px] flex items-center gap-4">
-              <span>⌖ {tiles.length} {tiles.length === 1 ? "tile" : "tiles"} registered</span>
+              <span>⌖ 4-zone grid · 2×2</span>
               <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <IsoHeatmap tiles={tiles} stats={stats} events={events} connected={connected} />
+              <IsoHeatmap stats={stats} events={events} connected={connected} />
             </div>
           </section>
 
@@ -146,7 +128,7 @@ export function Dashboard({
                 <div>
                   <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
-                    Peak Tile: {peakTile ? tileLabel(peakTile) : "—"}
+                    Peak Zone: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
                   </div>
                 </div>
                 <div className="text-right">
@@ -178,17 +160,13 @@ export function Dashboard({
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
                 <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Sensor Health</div>
-                <div className="text-text3 text-[11px]">{stats.activeTiles} of {tiles.length} reporting</div>
+                <div className="text-text3 text-[11px]">{stats.activeZones} of 4 reporting</div>
               </div>
-              <div className="mt-4 flex flex-col gap-2.5 max-h-[220px] overflow-auto">
-                {tiles.length === 0 && (
-                  <div className="text-text3 text-[12px]">No tiles registered yet.</div>
-                )}
-                {tiles.map((t) => {
-                  const active = isTileConnected(stats, t);
-                  const c = stats.counts[tileKey(t.number)] ?? 0;
+              <div className="mt-4 flex flex-col gap-2.5">
+                {ZONE_ORDER.map((z) => {
+                  const active = stats.counts[z] > 0;
                   return (
-                    <div key={t.id} className="flex items-center justify-between text-[13px]">
+                    <div key={z} className="flex items-center justify-between text-[13px]">
                       <div className="flex items-center gap-2 text-text2">
                         <span
                           className={active ? "pulse-dot" : ""}
@@ -198,10 +176,10 @@ export function Dashboard({
                             display: "inline-block",
                           }}
                         />
-                        {tileLabel(t)}
+                        {ZONE_LABELS[z]}
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
-                        {active ? `${c} hits` : "awaiting"}
+                        {active ? `${stats.counts[z]} hits` : "idle"}
                       </span>
                     </div>
                   );

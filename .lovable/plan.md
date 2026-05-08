@@ -1,53 +1,83 @@
-## Scope
+# Piezolytics — Floor Traffic Dashboard
 
-Make tiles user-managed. Each tile is just a number `n` in the user's account; the ESP32 reports events tagged `tile_<n>` and the dashboard lights that tile up when a recent event comes in.
+A dark-themed, copper-accented real-time dashboard that visualizes foot traffic across 4 retail zones using piezo floor sensor data. The centerpiece is a hand-drawn isometric 3D heatmap where block height encodes visit count.
 
-## 1. Database
+## Pages & Routes
 
-New table `user_tiles`:
-- `user_id uuid` (auth.users)
-- `tile_number int` (1..n, user-chosen)
-- `label text` (nullable, defaults to `Tile #<nn>`)
-- `created_at timestamptz`
-- Unique `(user_id, tile_number)`
-- RLS: user can select/insert/delete only their own rows
+- `/` — **Dashboard** (full visualization, the main view)
+- `/zones` — Per-zone detail cards with mini-charts and recent events filtered per zone
+- `/history` — Full paginated event log with filter by zone and time range
 
-## 2. Auth redirect
+All three share the sticky nav bar.
 
-After login/signup confirmation, query `user_tiles` for the current user:
-- 0 rows → `/zones` (Tile Manager)
-- ≥1 row → `/dashboard`
+## Layout (Dashboard)
 
-Replaces the current "is new account" heuristic.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ ◆ Piezolytics   Dashboard  Zones  History    ● live · ↻ · ✕ │  58px nav
+├──────────────────────────────────────────────────────────────┤
+│ Floor Analytics                  ┌────┐ ┌────┐ ┌────┐        │
+│ Live piezo · 3 of 4 active       │ 42 │ │  3 │ │ A1 │        │  hero
+│                                  └────┘ └────┘ └────┘        │
+├─────────────────────────────────────────┬────────────────────┤
+│ Activity Heatmap                        │ Zone Rankings      │
+│ elevation = visit count · 42 total      │ 3 active           │
+│                                         │ ┌────────────────┐ │
+│        [isometric 3D canvas]            │ │ Entrance  18   │ │
+│                                         │ │ ▓▓▓▓▓▓▓▓▓░  43%│ │
+│                                         │ └────────────────┘ │  530px
+│                                         │ ... 3 more cards   │
+│ ▁▂▃▅▇▆▄▃▂▁▂▄▆▇▅▃▁ sparkline (44px)      │                    │
+├─────────────────────────────────────────┴────────────────────┤
+│ Time         Zone          Signal                            │  table
+│ 14:02:11     Entrance      [ 812 ]                           │  last 20
+└──────────────────────────────────────────────────────────────┘
+```
 
-## 3. Tile Manager (`/zones`)
+## Isometric Heatmap (canvas centerpiece)
 
-Rewrite the page:
-- Input field: tile number (1–999) + Add button
-- Grid of cards for each saved tile, showing: `Tile #03`, recent-event count, connected dot (green if event in last 60s), Delete button
-- Empty state: "Add your first tile to start tracking" with a hint that the ESP32 should report under tag `tile_<n>`
+Built exactly to spec on a `<canvas>` using Canvas 2D:
+- 2×2 grid of floating 3D blocks (Entrance, Aisle A, Checkout, Aisle B)
+- Block height scales from EMIN=14 to EMAX=min(H*0.30, 120) by `count/maxCount`
+- TW = min(W*0.20, 92), TD = TW*0.50
+- Top face: radial gradient (dark → copper) + glow overlay when norm > 0.25
+- Left/right faces: vertical linear gradients, right face darker
+- Copper top-edge strokes with intensity tied to norm
+- Soft elliptical shadow under each block (drawn first, back-to-front)
+- Ambient copper ground glow centered under the cluster
+- Visit count number large and bright on top; zone name smaller in copper below it
+- Redraws on resize via `requestAnimationFrame`; redraws on every poll
 
-## 4. Dynamic tiles in floor-data
+## Live Data Flow
 
-- Replace hardcoded `SensorKey` union and `ZONE_ORDER` with a runtime list derived from the user's saved tiles.
-- Event `sensor` becomes a free-form `string` (e.g. `tile_3`).
-- `computeStats` takes the tile list as an arg; counts only events whose sensor matches a known `tile_<n>`.
-- Add `lastEpochByTile` so the dashboard can mark each tile connected if `now - lastEpoch < 60_000`.
+- Poll `GET /data` every 2 seconds via `setInterval`
+- Map `sensor` keys to zone labels (entrance/aisle_a/checkout/aisle_b)
+- Compute: counts per zone, total events, active zones, peak zone, sparkline buckets (last ~60 min in 17 buckets), last 20 events
+- Refresh button → immediate poll
+- Clear button → `GET /clear` then refetch
+- Live pill: pulsing copper dot + "live · HH:MM:SS" of last successful poll
+- Connection failure: pill turns muted, shows "offline"
 
-## 5. Dashboard rendering
+Since the backend (`localhost:8080`) won't be reachable from the deployed app, the dashboard also includes a **demo mode toggle** (auto-enabled when `/data` fails): generates plausible synthetic events every 2s so the visuals are always alive. Real backend takes over the moment it responds.
 
-- `Dashboard` and `IsoHeatmap` accept the user's tile list.
-- The 2×2 grid in `IsoHeatmap` becomes a square-ish grid sized to `Math.ceil(sqrt(tiles.length))`.
-- Each tile column shows the tile's label `Tile #<nn>`, its event count, and goes dim ("Awaiting") when not connected (no event in last 60s).
-- Leader-line tags use the tile's number, not a fixed "Tile #01..04" sequence.
-- If the user has 0 tiles on `/dashboard`, redirect them to `/zones`.
+## Components
 
-## 6. ESP32 mapping
+- `NavBar` — logo + tabs + live pill + actions
+- `LogoMark` — inline SVG (3×3 dot grid in #c8a876)
+- `HeroStats` — title block + 3 stat cards
+- `IsoHeatmap` — canvas + resize observer + draw routine
+- `Sparkline` — thin bar chart of event frequency (own small canvas)
+- `ZoneRankings` — sorted zone cards with activity bar
+- `ActivityTable` — last 20 events with copper signal badge
+- `useFloorData` hook — polling, demo fallback, derived stats
 
-No code change is required on the ESP32 side beyond what the user is already doing — it posts events with `sensor: "tile_<n>"` to `http://localhost:8080/data`. The dashboard now matches those tags to the tiles the user added in the Tile Manager.
+## Design Tokens
 
-## Out of scope
+All colors from the spec wired into `src/styles.css` as CSS variables and Tailwind theme tokens (`bg`, `surf`, `surf2`, `surf3`, `bord2`, `acc`, `acc2`, `acc3`, `text`, `text2`, `text3`, `text4`). Panels: `rounded-2xl`, the exact double box-shadow, and the 1px translucent white border. Lora + Inter loaded from Google Fonts; Lora used only for the brand wordmark and the hero title, Inter for everything else.
 
-- Renaming/reordering tiles (only number + delete for now)
-- Persisting events server-side in Lovable Cloud — we keep using the user's local `localhost:8080` server as the event source
-- Heartbeat endpoint (we use the "recent event <60s" rule)
+## Out of Scope
+
+- Real Arduino integration (the spec defines the contract; the dashboard consumes it)
+- Auth, accounts, or persistence beyond the backend's own `/data`
+- Light theme
+

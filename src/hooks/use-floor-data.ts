@@ -6,23 +6,16 @@ import {
   fetchEvents,
   tickDemo,
   type FloorEvent,
-  type Tile,
 } from "@/lib/floor-data";
 
 export type ConnState = "live" | "demo" | "offline";
 
-export function useFloorData(
-  tiles: Tile[],
-  intervalMs = 2000,
-  options: { demo?: boolean } = {},
-) {
+export function useFloorData(intervalMs = 2000, options: { demo?: boolean } = {}) {
   const { demo = false } = options;
   const [events, setEvents] = useState<FloorEvent[]>([]);
   const [conn, setConn] = useState<ConnState>("offline");
   const [lastUpdate, setLastUpdate] = useState<number | null>(null);
   const usingDemoRef = useRef(false);
-  const tilesRef = useRef(tiles);
-  tilesRef.current = tiles;
 
   const poll = useCallback(async () => {
     try {
@@ -34,7 +27,7 @@ export function useFloorData(
     } catch {
       if (demo) {
         usingDemoRef.current = true;
-        const data = tickDemo(tilesRef.current);
+        const data = tickDemo();
         setEvents(data);
         setConn("demo");
         setLastUpdate(Date.now());
@@ -68,7 +61,7 @@ export function useFloorData(
     }
   }, [poll]);
 
-  const stats = computeStats(events, tiles);
+  const stats = computeStats(events);
 
   return { events, stats, conn, lastUpdate, refresh, clearAll };
 }

@@ -1,21 +1,13 @@
-import {
-  isTileConnected,
-  tileKey,
-  tileLabel,
-  type FloorEvent,
-  type Stats,
-  type Tile,
-} from "@/lib/floor-data";
+import { ZONE_ORDER, ZONE_LABELS, type Stats, type SensorKey, type FloorEvent } from "@/lib/floor-data";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
 interface Props {
-  tiles: Tile[];
   stats: Stats;
   events?: FloorEvent[];
   connected?: boolean;
 }
 
-export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
@@ -29,31 +21,24 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-
   const maxCount = Math.max(1, stats.maxCount);
-  const tileHeights = tiles.map((t) => {
-    const count = stats.counts[tileKey(t.number)] ?? 0;
+  const activeHeights = ZONE_ORDER.map((zone) => {
+    const count = stats.counts[zone];
     const norm = count / maxCount;
     return 34 + norm * 104;
   });
-  const ghostPlaneHeight = tileHeights.length ? Math.max(...tileHeights) : 60;
+  const ghostPlaneHeight = Math.max(...activeHeights);
 
-  // Active tiles arranged in a square-ish grid centered inside an NxN ghost grid.
-  const side = Math.max(2, Math.ceil(Math.sqrt(Math.max(1, tiles.length))));
-  const N = side + 4; // ghost padding
-  const offset = Math.floor((N - side) / 2); // 1-based start col/row
-
-  const activePositions: Array<[number, number]> = tiles.map((_, i) => {
-    const r = Math.floor(i / side);
-    const c = i % side;
-    return [offset + 1 + c, offset + 1 + r];
-  });
-
+  // Ghost tile positions (column, row) in an NxN surrounding grid.
+  // Active 2x2 occupies the center: cols/rows N/2 and N/2+1.
+  const N = 8;
+  const activeA = N / 2;
+  const activeB = N / 2 + 1;
   const ghostCells: Array<[number, number]> = [];
-  const activeSet = new Set(activePositions.map(([c, r]) => `${c},${r}`));
   for (let r = 1; r <= N; r++) {
     for (let c = 1; c <= N; c++) {
-      if (!activeSet.has(`${c},${r}`)) ghostCells.push([c, r]);
+      const isActive = (c === activeA || c === activeB) && (r === activeA || r === activeB);
+      if (!isActive) ghostCells.push([c, r]);
     }
   }
 
@@ -63,31 +48,21 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
   useEffect(() => {
     if (!stageRef.current) return;
     const stageRect = stageRef.current.getBoundingClientRect();
-    const next = realRefs.current.slice(0, tiles.length).map((el) => {
+    const next = realRefs.current.map((el) => {
       if (!el) return { x: 0, y: 0 };
       const r = el.getBoundingClientRect();
       return { x: r.left - stageRect.left + r.width / 2, y: r.top - stageRect.top + r.height / 2 };
     });
     setCenters(next);
-  }, [dims.w, dims.h, stats.total, tiles.length]);
+  }, [dims.w, dims.h, stats.total]);
 
-  const LEADER = 80;
-  // Direction for leader line: based on tile position relative to grid center
-  const center = (side - 1) / 2;
-  const dirs: Array<[number, number]> = tiles.map((_, i) => {
-    const r = Math.floor(i / side);
-    const c = i % side;
-    const dx = c - center;
-    const dy = r - center;
-    const sx = dx >= 0 ? 1 : -1;
-    const sy = dy >= 0 ? 0.45 : -0.45;
-    return [sx, sy];
-  });
-
-  const gridStyle = {
-    gridTemplateColumns: `repeat(${N}, 1fr)`,
-    gridTemplateRows: `repeat(${N}, 1fr)`,
-  } as CSSProperties;
+  const dirs: Array<[number, number]> = [
+    [-1, -0.45],
+    [1, -0.45],
+    [-1, 0.45],
+    [1, 0.45],
+  ];
+  const LEADER = 95;
 
   return (
     <div className={connected ? "iso-stage" : "iso-stage iso-stage-idle"} ref={stageRef} aria-label="Floor traffic heatmap">
@@ -97,12 +72,7 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
           Waiting for Connection…
         </div>
       )}
-      {tiles.length === 0 && (
-        <div className="iso-awaiting" style={{ top: "50%" }}>
-          No tiles registered. Add one in the Tile Manager.
-        </div>
-      )}
-      <div className="iso-grid" style={gridStyle}>
+      <div className="iso-grid iso-grid-4">
         {ghostCells.map(([c, r]) => (
           <div
             key={`ghost-${c}-${r}`}
@@ -113,17 +83,17 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
             <div className="iso-ghost-top" />
           </div>
         ))}
-        {tiles.map((tile, index) => {
-          const count = stats.counts[tileKey(tile.number)] ?? 0;
+        {ZONE_ORDER.map((zone, index) => {
+          const count = stats.counts[zone];
           const norm = count / maxCount;
-          const height = tileHeights[index];
-          const tileConnected = isTileConnected(stats, tile);
-          const [gc, gr] = activePositions[index];
+          const height = activeHeights[index];
+          const activePos: Array<[number, number]> = [[activeA,activeA],[activeB,activeA],[activeA,activeB],[activeB,activeB]];
+          const [gc, gr] = activePos[index];
           return (
             <div
-              key={tile.id}
+              key={zone}
               ref={(el) => { realRefs.current[index] = el; }}
-              className={tileConnected ? "iso-block iso-block-real" : "iso-block iso-block-real iso-block-awaiting"}
+              className="iso-block iso-block-real"
               role="button"
               tabIndex={0}
               onClick={() => setSelected(index)}
@@ -187,7 +157,7 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
                   </svg>
                 </div>
                 <div className="iso-side-label">
-                  <span>{tileLabel(tile)}</span>
+                  <span>Tile {String(index + 1).padStart(2, "0")}</span>
                   <span className="iso-side-count">{count}</span>
                 </div>
               </div>
@@ -196,7 +166,7 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
         })}
       </div>
 
-      {centers.length === tiles.length && tiles.length > 0 && (
+      {centers.length === 4 && (
         <svg className="iso-leader-svg" width={dims.w} height={dims.h}>
           {centers.map((c, i) => {
             const [dx, dy] = dirs[i];
@@ -213,32 +183,33 @@ export function IsoHeatmap({ tiles, stats, events = [], connected = true }: Prop
           })}
         </svg>
       )}
-      {centers.length === tiles.length && tiles.map((tile, i) => {
+      {centers.length === 4 && ZONE_ORDER.map((zone, i) => {
         const c = centers[i];
-        if (!c) return null;
         const [dx, dy] = dirs[i];
         const len = Math.hypot(dx, dy);
         const ux = dx / len, uy = dy / len;
         const tx = c.x + ux * LEADER;
         const ty = c.y + uy * LEADER;
-        const sideAttr = ux < 0 ? "right" : "left";
-        const count = stats.counts[tileKey(tile.number)] ?? 0;
+        const side = ux < 0 ? "right" : "left";
         return (
           <div
-            key={`tag-${tile.id}`}
+            key={`tag-${zone}`}
             className="iso-tag iso-tag-leader"
-            data-side={sideAttr}
+            data-side={side}
             style={{ left: tx, top: ty }}
           >
-            <span className="iso-tag-label">Tile #{String(tile.number).padStart(2, "0")}</span>
-            <span className="iso-tag-count">{count}</span>
+            <span className="iso-tag-label">Tile #{String(i + 1).padStart(2, "0")}</span>
+            <span className="iso-tag-count">{stats.counts[zone]}</span>
           </div>
         );
       })}
 
-      {selected !== null && tiles[selected] && (
+      
+
+      {selected !== null && (
         <TileDetail
-          tile={tiles[selected]}
+          index={selected}
+          zone={ZONE_ORDER[selected]}
           stats={stats}
           events={events}
           onClose={() => setSelected(null)}
@@ -252,22 +223,25 @@ type RangeKey = "Day" | "Week" | "Month" | "Quarter" | "Year" | "All";
 const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
 
 function TileDetail({
-  tile,
+  index,
+  zone,
   stats,
   events,
   onClose,
 }: {
-  tile: Tile;
+  index: number;
+  zone: SensorKey;
   stats: Stats;
   events: FloorEvent[];
   onClose: () => void;
 }) {
   const [range, setRange] = useState<RangeKey>("Week");
-  const sensor = tileKey(tile.number);
-  const count = stats.counts[sensor] ?? 0;
+  const count = stats.counts[zone];
   const share = stats.total ? Math.round((count / stats.total) * 100) : 0;
-  const tileEvents = useMemo(() => events.filter((e) => e.sensor === sensor), [events, sensor]);
+  const zoneEvents = useMemo(() => events.filter((e) => e.sensor === zone), [events, zone]);
 
+  // Bucket config per range. Most ranges produce a 1-row strip; Month renders as
+  // a 2D grid (weekday rows × week columns) like a contribution calendar.
   const bucketConfig: Record<RangeKey, { count: number; unit: string; rows?: number; cols?: number; labels: (i: number) => string }> = {
     Day:     { count: 24, unit: "hour",  labels: (i) => (i % 3 === 0 ? `${i.toString().padStart(2, "0")}h` : "") },
     Week:    { count: 7,  unit: "day",   labels: (i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i] },
@@ -280,7 +254,7 @@ function TileDetail({
 
   const series = useMemo(() => {
     const buckets = new Array<number>(cfg.count).fill(0);
-    for (const e of tileEvents) {
+    for (const e of zoneEvents) {
       const d = new Date(e.epoch);
       const now = new Date();
       let idx = -1;
@@ -296,7 +270,7 @@ function TileDetail({
           const weeksAgo = Math.floor(diffDays / 7);
           const col = cols - 1 - weeksAgo;
           const jsDow = d.getDay();
-          const row = (jsDow + 6) % 7;
+          const row = (jsDow + 6) % 7; // Mon=0..Sun=6
           if (col >= 0 && col < cols) idx = row * cols + col;
         }
       } else if (range === "Quarter") {
@@ -311,31 +285,34 @@ function TileDetail({
       }
       if (idx >= 0) buckets[idx]++;
     }
-    const seed = (tile.number + 1) * 991 + range.length * 17;
+    const seed = (index + 1) * 991 + range.length * 17;
     const rand = (n: number) => {
       const x = Math.sin(seed + n * 12.9898) * 43758.5453;
       return x - Math.floor(x);
     };
     const rangeBoost = { Day: 0.4, Week: 1, Month: 1.4, Quarter: 1.8, Year: 2.2, All: 2.6 }[range];
     for (let i = 0; i < cfg.count; i++) {
-      const c = (cfg.count - 1) / 2;
-      const bias = Math.max(0.2, 1 - Math.abs(i - c) / cfg.count);
+      const center = (cfg.count - 1) / 2;
+      const bias = Math.max(0.2, 1 - Math.abs(i - center) / cfg.count);
       buckets[i] += (count / 4) * bias * (0.4 + rand(i) * 1.1) * rangeBoost;
     }
     return buckets;
-  }, [tileEvents, count, range, tile.number, cfg.count, cfg.cols, cfg.rows]);
+  }, [zoneEvents, count, range, index, cfg.count, cfg.cols, cfg.rows]);
 
   const heatMax = Math.max(1, ...series);
-  const last = tileEvents.length ? tileEvents[tileEvents.length - 1] : null;
 
+  const last = zoneEvents.length ? zoneEvents[zoneEvents.length - 1] : null;
+
+  // ---- Visits Today (hourly) — min / max / avg ----
   const visitsToday = useMemo(() => {
     const now = new Date();
     const buckets = new Array(24).fill(0);
-    for (const e of tileEvents) {
+    for (const e of zoneEvents) {
       const d = new Date(e.epoch);
       if (d.toDateString() === now.toDateString()) buckets[d.getHours()]++;
     }
-    const seed = (tile.number + 1) * 311;
+    // synth fill so chart never looks empty
+    const seed = (index + 1) * 311;
     const rand = (n: number) => {
       const x = Math.sin(seed + n * 7.13) * 43758.5453;
       return x - Math.floor(x);
@@ -345,21 +322,25 @@ function TileDetail({
       buckets[h] += Math.max(0, Math.round((count / 6) * peak * (0.4 + rand(h) * 1.1)));
     }
     return buckets;
-  }, [tileEvents, count, tile.number]);
+  }, [zoneEvents, count, index]);
 
+  const vtMin = Math.min(...visitsToday);
   const vtMax = Math.max(...visitsToday);
+  const vtAvg = visitsToday.reduce((s, v) => s + v, 0) / 24;
 
+  // ---- Average Dwell Times (seconds, by hour, smooth line) ----
   const dwellSeries = useMemo(() => {
-    const seed = (tile.number + 1) * 977 + 13;
+    const seed = (index + 1) * 977 + 13;
     const rand = (n: number) => {
       const x = Math.sin(seed + n * 4.71) * 43758.5453;
       return x - Math.floor(x);
     };
     return Array.from({ length: 24 }, (_, h) => {
+      // Linger longer at lunch + evening
       const base = 18 + (h >= 11 && h <= 14 ? 22 : 0) + (h >= 17 && h <= 20 ? 28 : 0);
       return Math.round(base + rand(h) * 18);
     });
-  }, [tile.number]);
+  }, [index]);
   const dwellMax = Math.max(...dwellSeries);
   const dwellAvg = Math.round(dwellSeries.reduce((s, v) => s + v, 0) / 24);
 
@@ -370,7 +351,7 @@ function TileDetail({
 
         <div className="iso-detail-top">
           <div>
-            <div className="iso-detail-eyebrow">{tileLabel(tile)} · sensor tag {sensor}</div>
+            <div className="iso-detail-eyebrow">Tile #{String(index + 1).padStart(2, "0")} · {ZONE_LABELS[zone]}</div>
             <div className="iso-detail-h1">Analytic view</div>
           </div>
           <div className="iso-detail-share">
@@ -465,6 +446,11 @@ function TileDetail({
                 <div className="iso-chart-title">Visits Today</div>
                 <div className="iso-chart-sub">Hourly · {visitsToday.reduce((s, v) => s + v, 0)} total</div>
               </div>
+              <div className="iso-chart-stats">
+                <span><b>{vtMin}</b><small>min</small></span>
+                <span><b>{Math.round(vtAvg)}</b><small>avg</small></span>
+                <span><b>{vtMax}</b><small>max</small></span>
+              </div>
             </div>
             <div className="iso-chart-bars" style={{ gridTemplateColumns: `repeat(24, 1fr)` } as CSSProperties}>
               {visitsToday.map((v, h) => {
@@ -534,7 +520,7 @@ function TileDetail({
               {Array.from({ length: 24 }).map((_, h) => (
                 <span key={h} className="iso-timeline-tick" style={{ left: `${(h / 24) * 100}%` } as CSSProperties} />
               ))}
-              {tileEvents.slice(-40).map((e, i) => {
+              {zoneEvents.slice(-40).map((e, i) => {
                 const d = new Date(e.epoch);
                 const today = d.toDateString() === new Date().toDateString();
                 if (!today) return null;
