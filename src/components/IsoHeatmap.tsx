@@ -377,20 +377,6 @@ function TileDetail({
           ))}
         </div>
 
-        <div className="iso-detail-bignums">
-          <div>
-            <div className="iso-bignum">{minVal} <span className="iso-bignum-arrow">↗</span></div>
-            <small>Minimum / {cfg.unit}</small>
-          </div>
-          <div>
-            <div className="iso-bignum">{avgVal} <span className="iso-bignum-arrow">↗</span></div>
-            <small>Average / {cfg.unit}</small>
-          </div>
-          <div>
-            <div className="iso-bignum">{maxVal} <span className="iso-bignum-arrow">↗</span></div>
-            <small>Maximum / {cfg.unit}</small>
-          </div>
-        </div>
 
         {range === "Month" ? (
           <div className="iso-heatgrid iso-heatcal">
