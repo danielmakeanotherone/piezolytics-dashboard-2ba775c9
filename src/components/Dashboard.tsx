@@ -4,6 +4,7 @@ import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useAuthSession } from "@/hooks/use-auth";
+import { useUserTiles } from "@/hooks/use-user-tiles";
 import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { useEffect, useRef, useState } from "react";
 
@@ -58,6 +59,10 @@ function Wave({ data }: { data: number[] }) {
 export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
   const { user } = useAuthSession();
+  const { tiles } = useUserTiles();
+  const tileNumbers = demo
+    ? [1, 2, 3, 4]
+    : ZONE_ORDER.map((_, i) => tiles[i]?.tile_number ?? i + 1);
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
@@ -118,7 +123,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
               <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <IsoHeatmap stats={stats} events={events} connected={connected} />
+              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} />
             </div>
           </section>
 
@@ -128,7 +133,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 <div>
                   <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
-                    Peak Zone: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
+                    Peak Tile: {stats.peakZone ? `#${String(tileNumbers[ZONE_ORDER.indexOf(stats.peakZone)]).padStart(2, "0")}` : "—"}
                   </div>
                 </div>
                 <div className="text-right">
@@ -163,7 +168,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 <div className="text-text3 text-[11px]">{stats.activeZones} of 4 reporting</div>
               </div>
               <div className="mt-4 flex flex-col gap-2.5">
-                {ZONE_ORDER.map((z) => {
+                {ZONE_ORDER.map((z, i) => {
                   const active = stats.counts[z] > 0;
                   return (
                     <div key={z} className="flex items-center justify-between text-[13px]">
@@ -176,7 +181,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                             display: "inline-block",
                           }}
                         />
-                        {ZONE_LABELS[z]}
+                        Tile #{String(tileNumbers[i]).padStart(2, "0")}
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
                         {active ? `${stats.counts[z]} hits` : "idle"}
