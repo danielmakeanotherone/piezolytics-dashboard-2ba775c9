@@ -60,9 +60,13 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
   const { user } = useAuthSession();
   const { tiles } = useUserTiles();
+  const demoLabels = ["Front Entrance", "Aisle A", "Checkout", "Aisle B"];
   const tileNumbers = demo
     ? [1, 2, 3, 4]
     : ZONE_ORDER.map((_, i) => tiles[i]?.tile_number ?? i + 1);
+  const tileLabels = demo
+    ? demoLabels
+    : ZONE_ORDER.map((_, i) => tiles[i]?.label || `Tile ${tiles[i]?.tile_number ?? i + 1}`);
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
