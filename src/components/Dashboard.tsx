@@ -133,7 +133,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 <div>
                   <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
-                    Peak Tile: {stats.peakZone ? `#${String(tileNumbers[ZONE_ORDER.indexOf(stats.peakZone)]).padStart(2, "0")}` : "—"}
+                    Peak Tile: {stats.peakZone ? `tile_${tileNumbers[ZONE_ORDER.indexOf(stats.peakZone)]}` : "—"}
                   </div>
                 </div>
                 <div className="text-right">
@@ -181,7 +181,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                             display: "inline-block",
                           }}
                         />
-                        Tile #{String(tileNumbers[i]).padStart(2, "0")}
+                        <span className="font-mono">tile_{tileNumbers[i]}</span>
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
                         {active ? `${stats.counts[z]} hits` : "idle"}

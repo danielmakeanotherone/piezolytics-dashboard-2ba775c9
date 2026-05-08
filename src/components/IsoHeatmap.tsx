@@ -159,7 +159,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
                   </svg>
                 </div>
                 <div className="iso-side-label">
-                  <span>Tile {String(tileNum(index)).padStart(2, "0")}</span>
+                  <span>tile_{tileNum(index)}</span>
                   <span className="iso-side-count">{count}</span>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
             data-side={side}
             style={{ left: tx, top: ty }}
           >
-            <span className="iso-tag-label">Tile #{String(tileNum(i)).padStart(2, "0")}</span>
+            <span className="iso-tag-label">tile_{tileNum(i)}</span>
             <span className="iso-tag-count">{stats.counts[zone]}</span>
           </div>
         );
@@ -356,7 +356,7 @@ function TileDetail({
 
         <div className="iso-detail-top">
           <div>
-            <div className="iso-detail-eyebrow">Tile #{String(tileNumber).padStart(2, "0")} · {ZONE_LABELS[zone]}</div>
+            <div className="iso-detail-eyebrow">Tile {tileNumber} · tile_{tileNumber}</div>
             <div className="iso-detail-h1">Analytic view</div>
           </div>
           <div className="iso-detail-share">
