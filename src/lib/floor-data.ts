@@ -121,12 +121,7 @@ export function tickDemo(): FloorEvent[] {
   const now = Date.now();
   for (let i = 0; i < adds; i++) {
     const sensor = pickWeighted();
-    demoStore.push({
-      ts: new Date(now).toISOString(),
-      epoch: now,
-      sensor,
-      value: 200 + Math.floor(Math.random() * 800),
-    });
+    demoStore.push(makeDemoEvent(now, sensor));
   }
   // Cap memory
   if (demoStore.length > 500) demoStore = demoStore.slice(-500);
