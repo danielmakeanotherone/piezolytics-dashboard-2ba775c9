@@ -2,6 +2,7 @@ import { type CSSProperties, useMemo, useState } from "react";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { OutlineBuilder, type OutlineElement as _OutlineElement } from "@/components/OutlineBuilder";
 
 const DEMO_TILES = [
   { id: "1", tile_number: 1, label: "Front Entrance" },
@@ -291,7 +292,7 @@ export function DemoHeatMap() {
                 {buckets.map((v, i) => (
                   <span
                     key={i}
-                    className="iso-heatcell"
+                    className="iso-heatcell iso-heatcell-red"
                     style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
                     title={`${labels(i)}: ${v}`}
                   />
@@ -315,12 +316,49 @@ export function DemoHeatMap() {
           <span className="iso-heatlegend-label">Less</span>
           <span className="iso-heatlegend-scale">
             {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => (
-              <span key={t} className="iso-heatcell iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
+              <span key={t} className="iso-heatcell iso-heatcell-red iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
             ))}
           </span>
           <span className="iso-heatlegend-label">More events</span>
         </div>
       </div>
+    </section>
+  );
+}
+
+
+const DEMO_OUTLINE: _OutlineElement[] = [
+  { id: "d1", type: "wall", x: 0, y: 0, w: 24, h: 1, name: "Wall N" },
+  { id: "d2", type: "wall", x: 0, y: 15, w: 24, h: 1, name: "Wall S" },
+  { id: "d3", type: "wall", x: 0, y: 1, w: 1, h: 14, name: "Wall W" },
+  { id: "d4", type: "wall", x: 23, y: 1, w: 1, h: 14, name: "Wall E" },
+  { id: "d5", type: "door", x: 11, y: 15, w: 2, h: 1, name: "Front Door" },
+  { id: "d6", type: "shelving", x: 4, y: 3, w: 1, h: 4, name: "Shelf A" },
+  { id: "d7", type: "shelving", x: 8, y: 3, w: 1, h: 4, name: "Shelf B" },
+  { id: "d8", type: "checkout", x: 18, y: 11, w: 2, h: 2, name: "Checkout" },
+  { id: "d9", type: "tile", x: 11, y: 13, w: 1, h: 1, name: "Front Entrance", tileNumber: 1 },
+  { id: "d10", type: "tile", x: 6, y: 5, w: 1, h: 1, name: "Aisle A", tileNumber: 2 },
+  { id: "d11", type: "tile", x: 18, y: 13, w: 1, h: 1, name: "Checkout", tileNumber: 3 },
+  { id: "d12", type: "tile", x: 14, y: 5, w: 1, h: 1, name: "Aisle B", tileNumber: 4 },
+];
+
+export function DemoOutline() {
+  const [els, setEls] = useState<_OutlineElement[]>(DEMO_OUTLINE);
+  return (
+    <section className="max-w-[1400px] mx-auto px-6 pt-4 pb-2">
+      <div className="mb-4">
+        <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
+          Outline Builder <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
+        </h2>
+        <p className="text-text3 text-sm mt-1">
+          Sketch your room layout and place each registered tile where it lives on the floor.
+        </p>
+      </div>
+      <OutlineBuilder
+        elements={els}
+        onChange={setEls}
+        registeredTiles={DEMO_TILES.map((t) => ({ tile_number: t.tile_number, label: t.label }))}
+      />
     </section>
   );
 }

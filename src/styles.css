@@ -563,6 +563,11 @@
   transition: transform .15s ease;
 }
 .iso-heatcell:hover { transform: scale(1.15); }
+/* Red heat scale: bright red (most active) → dark (least). Used on the Heat Map page. */
+.iso-heatcell.iso-heatcell-red {
+  background: color-mix(in srgb, #ff2d2d calc(var(--t) * 100%), #1a0808);
+  opacity: calc(0.35 + var(--t) * 0.65);
+}
 
 .iso-heatstrip-label {
   font: 500 10.5px/1 Inter, system-ui, sans-serif;

@@ -136,7 +136,7 @@ function HeatMapPage() {
                     {buckets.map((v, i) => (
                       <span
                         key={i}
-                        className="iso-heatcell"
+                        className="iso-heatcell iso-heatcell-red"
                         style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
                         title={`${cfg.labels(i) || `#${i + 1}`}: ${v}`}
                       />
@@ -160,7 +160,7 @@ function HeatMapPage() {
               <span className="iso-heatlegend-label">Less</span>
               <span className="iso-heatlegend-scale">
                 {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => (
-                  <span key={t} className="iso-heatcell iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
+                  <span key={t} className="iso-heatcell iso-heatcell-red iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
                 ))}
               </span>
               <span className="iso-heatlegend-label">More events</span>
