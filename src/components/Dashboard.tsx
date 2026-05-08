@@ -118,7 +118,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
                 <div>
-                  <div className="text-text font-medium">Traffic Intensity</div>
+                  <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
                     Peak Zone: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
                   </div>
@@ -151,7 +151,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
 
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
-                <div className="text-text font-medium">Sensor Health</div>
+                <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Sensor Health</div>
                 <div className="text-text3 text-[11px]">{stats.activeZones} of 4 reporting</div>
               </div>
               <div className="mt-4 flex flex-col gap-2.5">
@@ -188,7 +188,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
 
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
-                <div className="text-text font-medium">Hourly Density</div>
+                <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Hourly Density</div>
                 <div
                   className="text-text3 text-[10px] px-2 py-0.5 rounded-md"
                   style={{ border: "1px solid var(--bord2)" }}
