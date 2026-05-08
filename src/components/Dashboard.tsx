@@ -59,6 +59,10 @@ function Wave({ data }: { data: number[] }) {
 export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
   const { user } = useAuthSession();
+  const { tiles } = useUserTiles();
+  const tileNumbers = demo
+    ? [1, 2, 3, 4]
+    : ZONE_ORDER.map((_, i) => tiles[i]?.tile_number ?? i + 1);
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
