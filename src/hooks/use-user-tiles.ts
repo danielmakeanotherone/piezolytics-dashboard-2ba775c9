@@ -31,13 +31,13 @@ export function useUserTiles() {
     load();
   }, [load]);
 
-  const addTile = useCallback(async (tileNumber: number) => {
+  const addTile = useCallback(async (tileNumber: number, label: string) => {
     const { data: userRes } = await supabase.auth.getUser();
     const uid = userRes.user?.id;
     if (!uid) throw new Error("Not signed in");
     const { error } = await supabase
       .from("user_tiles")
-      .insert({ tile_number: tileNumber, user_id: uid });
+      .insert({ tile_number: tileNumber, label, user_id: uid });
     if (error) throw error;
     await load();
   }, [load]);

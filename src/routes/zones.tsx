@@ -20,6 +20,7 @@ function ZonesPage() {
   const { tiles, loading, error, addTile, removeTile } = useUserTiles();
   const [adding, setAdding] = useState(false);
   const [tileNum, setTileNum] = useState("");
+  const [tileLabel, setTileLabel] = useState("");
   const [submitErr, setSubmitErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -31,14 +32,24 @@ function ZonesPage() {
       setSubmitErr("Enter a tile number between 1 and 9999");
       return;
     }
+    const label = tileLabel.trim();
+    if (!label) {
+      setSubmitErr("Enter a location name");
+      return;
+    }
+    if (label.length > 60) {
+      setSubmitErr("Location name must be 60 characters or fewer");
+      return;
+    }
     if (tiles.some((t) => t.tile_number === n)) {
       setSubmitErr(`Tile #${n} is already registered`);
       return;
     }
     setBusy(true);
     try {
-      await addTile(n);
+      await addTile(n, label);
       setTileNum("");
+      setTileLabel("");
       setAdding(false);
     } catch (err) {
       setSubmitErr(err instanceof Error ? err.message : "Failed to add tile");
@@ -57,7 +68,7 @@ function ZonesPage() {
               Tile Manager
             </h1>
             <p className="text-text3 text-sm mt-1">
-              Register the tile IDs hardcoded into your ESP32 devices.
+              Register the tile IDs hardcoded into your ESP32 devices and label each location.
             </p>
           </div>
           {!adding && (
@@ -72,8 +83,8 @@ function ZonesPage() {
         </div>
 
         {adding && (
-          <form onSubmit={handleAdd} className="panel p-5 mb-6 flex items-end gap-3">
-            <div className="flex-1">
+          <form onSubmit={handleAdd} className="panel p-5 mb-6 flex items-end gap-3 flex-wrap">
+            <div style={{ width: 110 }}>
               <label className="text-text3 text-[11px] uppercase tracking-wider block mb-1.5">
                 Tile #
               </label>
@@ -86,11 +97,24 @@ function ZonesPage() {
                 autoFocus
                 value={tileNum}
                 onChange={(e) => setTileNum(e.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="e.g. 1"
+                placeholder="1"
                 className="w-full px-3 py-2 rounded-lg text-text bg-transparent"
                 style={{ border: "1px solid var(--bord2)" }}
               />
-              {submitErr && <div className="text-xs mt-1.5" style={{ color: "#e07a6a" }}>{submitErr}</div>}
+            </div>
+            <div className="flex-1 min-w-[220px]">
+              <label className="text-text3 text-[11px] uppercase tracking-wider block mb-1.5">
+                Location name
+              </label>
+              <input
+                type="text"
+                maxLength={60}
+                value={tileLabel}
+                onChange={(e) => setTileLabel(e.target.value)}
+                placeholder="e.g. Front Entrance"
+                className="w-full px-3 py-2 rounded-lg text-text bg-transparent"
+                style={{ border: "1px solid var(--bord2)" }}
+              />
             </div>
             <button
               type="submit"
@@ -102,12 +126,13 @@ function ZonesPage() {
             </button>
             <button
               type="button"
-              onClick={() => { setAdding(false); setTileNum(""); setSubmitErr(null); }}
+              onClick={() => { setAdding(false); setTileNum(""); setTileLabel(""); setSubmitErr(null); }}
               className="px-4 py-2 rounded-lg text-sm text-text2 hover:text-text"
               style={{ border: "1px solid var(--bord2)" }}
             >
               Cancel
             </button>
+            {submitErr && <div className="basis-full text-xs" style={{ color: "#e07a6a" }}>{submitErr}</div>}
           </form>
         )}
 
@@ -124,9 +149,9 @@ function ZonesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tiles.map((t) => (
               <div key={t.id} className="panel p-5 flex items-center justify-between">
-                <div>
-                  <div className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
-                    Tile {t.tile_number}
+                <div className="min-w-0">
+                  <div className="font-display text-text truncate" style={{ fontSize: 22, fontWeight: 600 }}>
+                    {t.label || `Tile ${t.tile_number}`}
                   </div>
                   <div className="font-mono text-text3 text-[12px] mt-1">
                     tile_{t.tile_number}

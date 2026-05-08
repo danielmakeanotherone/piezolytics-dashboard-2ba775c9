@@ -60,9 +60,13 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
   const { user } = useAuthSession();
   const { tiles } = useUserTiles();
+  const demoLabels = ["Front Entrance", "Aisle A", "Checkout", "Aisle B"];
   const tileNumbers = demo
     ? [1, 2, 3, 4]
     : ZONE_ORDER.map((_, i) => tiles[i]?.tile_number ?? i + 1);
+  const tileLabels = demo
+    ? demoLabels
+    : ZONE_ORDER.map((_, i) => tiles[i]?.label || `Tile ${tiles[i]?.tile_number ?? i + 1}`);
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
@@ -123,7 +127,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
               <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} />
+              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} tileLabels={tileLabels} />
             </div>
           </section>
 
@@ -133,7 +137,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 <div>
                   <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
-                    Peak Tile: {stats.peakZone ? `tile_${tileNumbers[ZONE_ORDER.indexOf(stats.peakZone)]}` : "—"}
+                    Peak Tile: {stats.peakZone ? tileLabels[ZONE_ORDER.indexOf(stats.peakZone)] : "—"}
                   </div>
                 </div>
                 <div className="text-right">
@@ -181,7 +185,10 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                             display: "inline-block",
                           }}
                         />
-                        <span className="font-mono">tile_{tileNumbers[i]}</span>
+                        <span>
+                          {tileLabels[i]}
+                          <span className="font-mono text-text3 ml-1.5 text-[11px]">tile_{tileNumbers[i]}</span>
+                        </span>
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
                         {active ? `${stats.counts[z]} hits` : "idle"}

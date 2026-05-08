@@ -6,10 +6,12 @@ interface Props {
   events?: FloorEvent[];
   connected?: boolean;
   tileNumbers?: number[];
+  tileLabels?: string[];
 }
 
-export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels }: Props) {
   const tileNum = (i: number) => tileNumbers?.[i] ?? i + 1;
+  const tileLabel = (i: number) => tileLabels?.[i] ?? `Tile ${tileNum(i)}`;
   const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
@@ -159,7 +161,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
                   </svg>
                 </div>
                 <div className="iso-side-label">
-                  <span>tile_{tileNum(index)}</span>
+                  <span>{tileLabel(index)}</span>
                   <span className="iso-side-count">{count}</span>
                 </div>
               </div>
@@ -200,7 +202,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
             data-side={side}
             style={{ left: tx, top: ty }}
           >
-            <span className="iso-tag-label">tile_{tileNum(i)}</span>
+            <span className="iso-tag-label">{tileLabel(i)}</span>
             <span className="iso-tag-count">{stats.counts[zone]}</span>
           </div>
         );
@@ -212,6 +214,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
         <TileDetail
           index={selected}
           tileNumber={tileNum(selected)}
+          tileLabel={tileLabel(selected)}
           zone={ZONE_ORDER[selected]}
           stats={stats}
           events={events}
@@ -228,6 +231,7 @@ const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
 function TileDetail({
   index,
   tileNumber,
+  tileLabel,
   zone,
   stats,
   events,
@@ -235,6 +239,7 @@ function TileDetail({
 }: {
   index: number;
   tileNumber: number;
+  tileLabel: string;
   zone: SensorKey;
   stats: Stats;
   events: FloorEvent[];
@@ -356,7 +361,7 @@ function TileDetail({
 
         <div className="iso-detail-top">
           <div>
-            <div className="iso-detail-eyebrow">Tile {tileNumber} · tile_{tileNumber}</div>
+            <div className="iso-detail-eyebrow">{tileLabel} · tile_{tileNumber}</div>
             <div className="iso-detail-h1">Analytic view</div>
           </div>
           <div className="iso-detail-share">
