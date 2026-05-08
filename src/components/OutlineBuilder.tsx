@@ -94,9 +94,10 @@ interface Props {
   readOnly?: boolean;
 }
 
+type Handle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
 type DragMode =
   | { kind: "move"; id: string; offX: number; offY: number }
-  | { kind: "resize"; id: string; handle: "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w"; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
+  | { kind: "resize"; id: string; handle: Handle; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
 
 export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, saving, readOnly }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
