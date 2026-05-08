@@ -83,6 +83,18 @@ function AuthPage() {
           </p>
 
           <form onSubmit={submit} className="flex flex-col gap-3">
+            {isSignup && (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[11px] uppercase tracking-wider text-text3">Full Name</span>
+                <input
+                  type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  className="px-3 py-2.5 rounded-lg text-sm"
+                  style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)" }}
+                  autoComplete="name"
+                  placeholder="Jane Doe"
+                />
+              </label>
+            )}
             <label className="flex flex-col gap-1.5">
               <span className="text-[11px] uppercase tracking-wider text-text3">Email</span>
               <input
