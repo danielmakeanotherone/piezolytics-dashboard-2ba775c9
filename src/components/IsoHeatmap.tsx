@@ -211,6 +211,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
       {selected !== null && (
         <TileDetail
           index={selected}
+          tileNumber={tileNum(selected)}
           zone={ZONE_ORDER[selected]}
           stats={stats}
           events={events}
