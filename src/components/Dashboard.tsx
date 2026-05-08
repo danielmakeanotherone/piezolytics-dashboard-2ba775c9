@@ -133,7 +133,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 <div>
                   <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
-                    Peak Zone: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
+                    Peak Tile: {stats.peakZone ? `#${String(tileNumbers[ZONE_ORDER.indexOf(stats.peakZone)]).padStart(2, "0")}` : "—"}
                   </div>
                 </div>
                 <div className="text-right">
