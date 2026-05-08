@@ -85,15 +85,11 @@ export function DemoHistory() {
   }, [tagged]);
 
   const enriched = useMemo(() => {
-    const chrono = [...tagged].sort((a, b) => a.epoch - b.epoch);
-    return chrono.map((e, i) => {
-      const prev = i > 0 ? chrono[i - 1] : null;
-      return {
-        ...e,
-        fromTile: prev ? prev.tileNumber : null,
-        toTile: e.tileNumber,
-        dwellMs: prev ? e.epoch - prev.epoch : null,
-      };
+    return tagged.map((e) => {
+      const dir: "A→B" | "B→A" | null =
+        e.firstTile === 1 ? "A→B" : e.firstTile === 2 ? "B→A" : null;
+      const dwellMs = (e.dwellAMs ?? 0) + (e.dwellBMs ?? 0) || null;
+      return { ...e, direction: dir, dwellMs };
     });
   }, [tagged]);
 
