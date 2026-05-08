@@ -48,5 +48,14 @@ export function useUserTiles() {
     await load();
   }, [load]);
 
-  return { tiles, loading, error, addTile, removeTile, refresh: load };
+  const updateTile = useCallback(async (id: string, tileNumber: number, label: string) => {
+    const { error } = await supabase
+      .from("user_tiles")
+      .update({ tile_number: tileNumber, label })
+      .eq("id", id);
+    if (error) throw error;
+    await load();
+  }, [load]);
+
+  return { tiles, loading, error, addTile, removeTile, updateTile, refresh: load };
 }

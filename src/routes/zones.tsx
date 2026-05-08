@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
-import { useUserTiles } from "@/hooks/use-user-tiles";
-import { Plus, Trash2 } from "lucide-react";
+import { useUserTiles, type UserTile } from "@/hooks/use-user-tiles";
+import { Plus, Trash2, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/zones")({
   head: () => ({
@@ -15,17 +15,39 @@ export const Route = createFileRoute("/zones")({
   component: ZonesPage,
 });
 
+type FormMode = { kind: "add" } | { kind: "edit"; tile: UserTile } | null;
+
 function ZonesPage() {
   const { conn, lastUpdate, refresh, clearAll } = useFloorData();
-  const { tiles, loading, error, addTile, removeTile } = useUserTiles();
-  const [adding, setAdding] = useState(false);
+  const { tiles, loading, error, addTile, removeTile, updateTile } = useUserTiles();
+  const [mode, setMode] = useState<FormMode>(null);
   const [tileNum, setTileNum] = useState("");
   const [tileLabel, setTileLabel] = useState("");
   const [submitErr, setSubmitErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const openAdd = () => {
+    setMode({ kind: "add" });
+    setTileNum("");
+    setTileLabel("");
+    setSubmitErr(null);
+  };
+  const openEdit = (t: UserTile) => {
+    setMode({ kind: "edit", tile: t });
+    setTileNum(String(t.tile_number));
+    setTileLabel(t.label ?? "");
+    setSubmitErr(null);
+  };
+  const closeForm = () => {
+    setMode(null);
+    setTileNum("");
+    setTileLabel("");
+    setSubmitErr(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mode) return;
     setSubmitErr(null);
     const n = parseInt(tileNum, 10);
     if (!Number.isInteger(n) || n < 1 || n > 9999) {
@@ -41,18 +63,20 @@ function ZonesPage() {
       setSubmitErr("Location name must be 60 characters or fewer");
       return;
     }
-    if (tiles.some((t) => t.tile_number === n)) {
+    const conflict = tiles.some(
+      (t) => t.tile_number === n && (mode.kind === "add" || t.id !== mode.tile.id),
+    );
+    if (conflict) {
       setSubmitErr(`Tile #${n} is already registered`);
       return;
     }
     setBusy(true);
     try {
-      await addTile(n, label);
-      setTileNum("");
-      setTileLabel("");
-      setAdding(false);
+      if (mode.kind === "add") await addTile(n, label);
+      else await updateTile(mode.tile.id, n, label);
+      closeForm();
     } catch (err) {
-      setSubmitErr(err instanceof Error ? err.message : "Failed to add tile");
+      setSubmitErr(err instanceof Error ? err.message : "Failed to save tile");
     } finally {
       setBusy(false);
     }
@@ -71,9 +95,9 @@ function ZonesPage() {
               Register the tile IDs hardcoded into your ESP32 devices and label each location.
             </p>
           </div>
-          {!adding && (
+          {!mode && (
             <button
-              onClick={() => { setAdding(true); setSubmitErr(null); }}
+              onClick={openAdd}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
               style={{ background: "var(--acc)", color: "#1a1611" }}
             >
@@ -82,8 +106,8 @@ function ZonesPage() {
           )}
         </div>
 
-        {adding && (
-          <form onSubmit={handleAdd} className="panel p-5 mb-6 flex items-end gap-3 flex-wrap">
+        {mode && (
+          <form onSubmit={handleSubmit} className="panel p-5 mb-6 flex items-end gap-3 flex-wrap">
             <div style={{ width: 110 }}>
               <label className="text-text3 text-[11px] uppercase tracking-wider block mb-1.5">
                 Tile #
@@ -122,11 +146,11 @@ function ZonesPage() {
               className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
               style={{ background: "var(--acc)", color: "#1a1611" }}
             >
-              {busy ? "Adding…" : "Save"}
+              {busy ? "Saving…" : mode.kind === "edit" ? "Save changes" : "Save"}
             </button>
             <button
               type="button"
-              onClick={() => { setAdding(false); setTileNum(""); setTileLabel(""); setSubmitErr(null); }}
+              onClick={closeForm}
               className="px-4 py-2 rounded-lg text-sm text-text2 hover:text-text"
               style={{ border: "1px solid var(--bord2)" }}
             >
@@ -148,7 +172,7 @@ function ZonesPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tiles.map((t) => (
-              <div key={t.id} className="panel p-5 flex items-center justify-between">
+              <div key={t.id} className="panel p-5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-display text-text truncate" style={{ fontSize: 22, fontWeight: 600 }}>
                     {t.label || `Tile ${t.tile_number}`}
@@ -157,14 +181,24 @@ function ZonesPage() {
                     tile_{t.tile_number}
                   </div>
                 </div>
-                <button
-                  onClick={() => removeTile(t.id)}
-                  aria-label={`Remove tile ${t.tile_number}`}
-                  className="p-2 rounded-lg text-text3 hover:text-text hover:bg-surf2 transition-colors"
-                  style={{ border: "1px solid var(--bord2)" }}
-                >
-                  <Trash2 size={15} />
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => openEdit(t)}
+                    aria-label={`Edit tile ${t.tile_number}`}
+                    className="p-2 rounded-lg text-text3 hover:text-text hover:bg-surf2 transition-colors"
+                    style={{ border: "1px solid var(--bord2)" }}
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    onClick={() => removeTile(t.id)}
+                    aria-label={`Remove tile ${t.tile_number}`}
+                    className="p-2 rounded-lg text-text3 hover:text-text hover:bg-surf2 transition-colors"
+                    style={{ border: "1px solid var(--bord2)" }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
