@@ -326,7 +326,6 @@ export function DemoHeatMap() {
   );
 }
 
-import { OutlineBuilder, type OutlineElement as _OutlineElement } from "@/components/OutlineBuilder";
 
 const DEMO_OUTLINE: _OutlineElement[] = [
   { id: "d1", type: "wall", x: 0, y: 0, w: 24, h: 1, name: "Wall N" },
