@@ -14,6 +14,7 @@ interface Props {
 const tabs = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/zones", label: "Tile Manager" },
+  { to: "/outline", label: "Outline Builder" },
   { to: "/heatmap", label: "Heat Map" },
   { to: "/history", label: "Entries" },
 ] as const;
