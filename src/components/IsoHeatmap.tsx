@@ -200,7 +200,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
             data-side={side}
             style={{ left: tx, top: ty }}
           >
-            <span className="iso-tag-label">Tile #{String(i + 1).padStart(2, "0")}</span>
+            <span className="iso-tag-label">Tile #{String(tileNum(i)).padStart(2, "0")}</span>
             <span className="iso-tag-count">{stats.counts[zone]}</span>
           </div>
         );
