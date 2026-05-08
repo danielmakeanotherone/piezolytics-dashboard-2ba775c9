@@ -17,6 +17,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const [demoTab, setDemoTab] = useState<DemoTab>("dashboard");
   return (
     <div className="min-h-screen bg-bg text-text">
       <header
@@ -100,9 +101,38 @@ function Landing() {
 
       {/* Demo dashboard preview (random data) */}
       <div id="demo" style={{ scrollMarginTop: 58 }}>
-        <Dashboard demo hideNav />
-        <DemoTileManager />
-        <DemoHistory />
+        <div className="max-w-[1400px] mx-auto px-6 pt-8">
+          <div
+            className="flex items-center gap-1 p-1 rounded-xl w-fit"
+            style={{ background: "var(--surf2)", border: "1px solid var(--bord2)" }}
+          >
+            {(
+              [
+                { id: "dashboard", label: "Dashboard" },
+                { id: "zones", label: "Tile Manager" },
+                { id: "history", label: "History" },
+              ] as { id: DemoTab; label: string }[]
+            ).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setDemoTab(t.id)}
+                className="px-3.5 py-1.5 rounded-lg text-sm transition-colors"
+                style={{
+                  background: demoTab === t.id ? "var(--surf3)" : "transparent",
+                  color: demoTab === t.id ? "var(--text)" : "var(--text2)",
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+            <span className="ml-2 mr-2 text-[10px] uppercase tracking-[0.18em] text-text3">
+              Preview
+            </span>
+          </div>
+        </div>
+        {demoTab === "dashboard" && <Dashboard demo hideNav />}
+        {demoTab === "zones" && <DemoTileManager />}
+        {demoTab === "history" && <DemoHistory />}
       </div>
 
       <section className="max-w-[1400px] mx-auto px-6 py-24 text-center flex flex-col items-center">
