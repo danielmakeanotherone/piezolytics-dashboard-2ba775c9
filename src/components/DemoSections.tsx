@@ -84,8 +84,21 @@ export function DemoHistory() {
     return counts;
   }, [tagged]);
 
-  const rows = tagged
-    .filter((e) => filter === "all" || e.tileNumber === filter)
+  const enriched = useMemo(() => {
+    const chrono = [...tagged].sort((a, b) => a.epoch - b.epoch);
+    return chrono.map((e, i) => {
+      const prev = i > 0 ? chrono[i - 1] : null;
+      return {
+        ...e,
+        fromTile: prev ? prev.tileNumber : null,
+        toTile: e.tileNumber,
+        dwellMs: prev ? e.epoch - prev.epoch : null,
+      };
+    });
+  }, [tagged]);
+
+  const rows = enriched
+    .filter((e) => filter === "all" || e.toTile === filter || e.fromTile === filter)
     .sort((a, b) => b.epoch - a.epoch)
     .slice(0, 80);
 
