@@ -10,10 +10,10 @@ export interface FloorEvent {
 export const ZONE_ORDER: SensorKey[] = ["entrance", "aisle_a", "checkout", "aisle_b"];
 
 export const ZONE_LABELS: Record<SensorKey, string> = {
-  entrance: "Entrance",
-  aisle_a: "Aisle A",
-  checkout: "Checkout",
-  aisle_b: "Aisle B",
+  entrance: "tile_1",
+  aisle_a: "tile_2",
+  checkout: "tile_3",
+  aisle_b: "tile_4",
 };
 
 // Grid positions (col, row) in 2x2
