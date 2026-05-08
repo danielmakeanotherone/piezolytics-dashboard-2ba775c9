@@ -5,6 +5,13 @@ export interface FloorEvent {
   epoch: number;
   sensor: SensorKey;
   value: number;
+  // Per-tile A/B side data from ESP32 VISIT payloads.
+  // firstTile: 1 = stepped on A first (A → B), 2 = stepped on B first (B → A)
+  firstTile?: 1 | 2;
+  dwellAMs?: number;
+  dwellBMs?: number;
+  peakA?: number;
+  peakB?: number;
 }
 
 export const ZONE_ORDER: SensorKey[] = ["entrance", "aisle_a", "checkout", "aisle_b"];
@@ -82,15 +89,29 @@ function seedDemo() {
       const second = Math.floor(Math.random() * 60);
       const epoch = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second).getTime();
       if (epoch > now) continue;
-      out.push({
-        ts: new Date(epoch).toISOString(),
-        epoch,
-        sensor: pickWeighted(),
-        value: 200 + Math.floor(Math.random() * 800),
-      });
+      out.push(makeDemoEvent(epoch, pickWeighted()));
     }
   }
   demoStore = out.sort((a, b) => a.epoch - b.epoch);
+}
+
+function makeDemoEvent(epoch: number, sensor: SensorKey): FloorEvent {
+  const firstTile: 1 | 2 = Math.random() < 0.5 ? 1 : 2;
+  const dwellA = 250 + Math.floor(Math.random() * 1500);
+  const dwellB = 250 + Math.floor(Math.random() * 1500);
+  const peakA = 240 + Math.floor(Math.random() * 760);
+  const peakB = 240 + Math.floor(Math.random() * 760);
+  return {
+    ts: new Date(epoch).toISOString(),
+    epoch,
+    sensor,
+    value: Math.max(peakA, peakB),
+    firstTile,
+    dwellAMs: dwellA,
+    dwellBMs: dwellB,
+    peakA,
+    peakB,
+  };
 }
 
 export function tickDemo(): FloorEvent[] {
@@ -100,12 +121,7 @@ export function tickDemo(): FloorEvent[] {
   const now = Date.now();
   for (let i = 0; i < adds; i++) {
     const sensor = pickWeighted();
-    demoStore.push({
-      ts: new Date(now).toISOString(),
-      epoch: now,
-      sensor,
-      value: 200 + Math.floor(Math.random() * 800),
-    });
+    demoStore.push(makeDemoEvent(now, sensor));
   }
   // Cap memory
   if (demoStore.length > 500) demoStore = demoStore.slice(-500);

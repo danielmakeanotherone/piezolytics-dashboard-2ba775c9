@@ -38,21 +38,21 @@ function HistoryPage() {
     return m;
   }, [tiles]);
 
-  // Build chronological list of registered-tile events to compute transitions + dwell
+  // Each event is one VISIT on a tile; direction is which side (A or B) was stepped on first.
   const enriched = useMemo(() => {
-    const chrono = tagged
+    return tagged
       .filter((e) => registeredNums.has(e.tileNumber))
-      .sort((a, b) => a.epoch - b.epoch);
-    return chrono.map((e, i) => {
-      const prev = i > 0 ? chrono[i - 1] : null;
-      const fromTile = prev ? prev.tileNumber : null;
-      const dwellMs = prev ? e.epoch - prev.epoch : null;
-      return { ...e, fromTile, toTile: e.tileNumber, dwellMs };
-    });
+      .map((e) => {
+        const dir: "A→B" | "B→A" | null =
+          e.firstTile === 1 ? "A→B" : e.firstTile === 2 ? "B→A" : null;
+        const dwellMs =
+          (e.dwellAMs ?? 0) + (e.dwellBMs ?? 0) || null;
+        return { ...e, direction: dir, dwellMs };
+      });
   }, [tagged, registeredNums]);
 
   const rows = enriched
-    .filter((e) => filter === "all" || e.toTile === filter || e.fromTile === filter)
+    .filter((e) => filter === "all" || e.tileNumber === filter)
     .sort((a, b) => b.epoch - a.epoch);
 
   const perTileCounts = useMemo(() => {
@@ -141,7 +141,7 @@ function HistoryPage() {
                 style={{ gridTemplateColumns: "180px 1.4fr 110px 120px", borderBottom: "1px solid var(--bord2)" }}
               >
                 <div>Time</div>
-                <div>Transition</div>
+                <div>Tile · Direction</div>
                 <div>Dwell</div>
                 <div className="text-right">Signal</div>
               </div>
@@ -152,11 +152,7 @@ function HistoryPage() {
                   </div>
                 )}
                 {rows.map((e, i) => {
-                  const fromLabel =
-                    e.fromTile != null
-                      ? labelByNum.get(e.fromTile) ?? `Tile ${e.fromTile}`
-                      : null;
-                  const toLabel = labelByNum.get(e.toTile) ?? `Tile ${e.toTile}`;
+                  const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
                   return (
                     <div
                       key={`${e.epoch}-${i}`}
@@ -165,17 +161,18 @@ function HistoryPage() {
                     >
                       <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
                       <div className="text-text truncate">
-                        {fromLabel ? (
-                          <>
-                            <span className="text-text2">{fromLabel}</span>
-                            <span className="text-text3 mx-2">→</span>
-                            <span>{toLabel}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-text3 mr-2">first</span>
-                            <span>{toLabel}</span>
-                          </>
+                        <span className="text-text2">{tileLabel}</span>
+                        {e.direction && (
+                          <span
+                            className="ml-2 inline-block px-2 py-0.5 rounded font-mono text-[11px]"
+                            style={{
+                              background: "rgba(200,168,118,0.10)",
+                              color: "var(--acc)",
+                              border: "1px solid rgba(200,168,118,0.20)",
+                            }}
+                          >
+                            {e.direction === "A→B" ? "A → B" : "B → A"}
+                          </span>
                         )}
                       </div>
                       <div className="text-text2 font-mono text-[12px]">
