@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { Plus, Pencil, Trash2 } from "lucide-react";
