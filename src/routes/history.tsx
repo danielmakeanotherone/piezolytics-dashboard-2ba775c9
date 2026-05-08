@@ -152,11 +152,7 @@ function HistoryPage() {
                   </div>
                 )}
                 {rows.map((e, i) => {
-                  const fromLabel =
-                    e.fromTile != null
-                      ? labelByNum.get(e.fromTile) ?? `Tile ${e.fromTile}`
-                      : null;
-                  const toLabel = labelByNum.get(e.toTile) ?? `Tile ${e.toTile}`;
+                  const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
                   return (
                     <div
                       key={`${e.epoch}-${i}`}
@@ -165,17 +161,18 @@ function HistoryPage() {
                     >
                       <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
                       <div className="text-text truncate">
-                        {fromLabel ? (
-                          <>
-                            <span className="text-text2">{fromLabel}</span>
-                            <span className="text-text3 mx-2">→</span>
-                            <span>{toLabel}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-text3 mr-2">first</span>
-                            <span>{toLabel}</span>
-                          </>
+                        <span className="text-text2">{tileLabel}</span>
+                        {e.direction && (
+                          <span
+                            className="ml-2 inline-block px-2 py-0.5 rounded font-mono text-[11px]"
+                            style={{
+                              background: "rgba(200,168,118,0.10)",
+                              color: "var(--acc)",
+                              border: "1px solid rgba(200,168,118,0.20)",
+                            }}
+                          >
+                            {e.direction === "A→B" ? "A → B" : "B → A"}
+                          </span>
                         )}
                       </div>
                       <div className="text-text2 font-mono text-[12px]">
