@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
-import { ZONE_LABELS, ZONE_ORDER, formatTime, type SensorKey } from "@/lib/floor-data";
+import { useTiles } from "@/hooks/use-tiles";
+import { formatTime, tileKey, tileLabel } from "@/lib/floor-data";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -15,8 +16,11 @@ export const Route = createFileRoute("/history")({
 });
 
 function HistoryPage() {
-  const { events, conn, lastUpdate, refresh, clearAll } = useFloorData();
-  const [filter, setFilter] = useState<SensorKey | "all">("all");
+  const { tiles } = useTiles();
+  const { events, conn, lastUpdate, refresh, clearAll } = useFloorData(tiles);
+  const [filter, setFilter] = useState<string>("all");
+
+  const labelByKey = new Map(tiles.map((t) => [tileKey(t.number), tileLabel(t)]));
 
   const rows = [...events]
     .filter((e) => filter === "all" || e.sensor === filter)
@@ -26,12 +30,12 @@ function HistoryPage() {
     <div className="min-h-screen bg-bg text-text">
       <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} />
       <main className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h1 className="font-display text-text" style={{ fontSize: 28, fontWeight: 600 }}>
             History
           </h1>
-          <div className="flex gap-1.5">
-            {(["all", ...ZONE_ORDER] as const).map((k) => (
+          <div className="flex gap-1.5 flex-wrap">
+            {(["all", ...tiles.map((t) => tileKey(t.number))]).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
@@ -42,7 +46,7 @@ function HistoryPage() {
                   border: "1px solid var(--bord2)",
                 }}
               >
-                {k === "all" ? "All" : ZONE_LABELS[k]}
+                {k === "all" ? "All" : labelByKey.get(k) ?? k}
               </button>
             ))}
           </div>
@@ -54,7 +58,7 @@ function HistoryPage() {
             style={{ gridTemplateColumns: "200px 1fr 1fr 120px", borderBottom: "1px solid var(--bord2)" }}
           >
             <div>Time</div>
-            <div>Zone</div>
+            <div>Tile</div>
             <div>Sensor key</div>
             <div className="text-right">Signal</div>
           </div>
@@ -69,7 +73,7 @@ function HistoryPage() {
                 style={{ gridTemplateColumns: "200px 1fr 1fr 120px", borderBottom: "1px solid rgba(74,60,42,.4)" }}
               >
                 <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
-                <div className="text-text">{ZONE_LABELS[e.sensor]}</div>
+                <div className="text-text">{labelByKey.get(e.sensor) ?? e.sensor}</div>
                 <div className="text-text3 font-mono text-[12px]">{e.sensor}</div>
                 <div className="text-right">
                   <span
