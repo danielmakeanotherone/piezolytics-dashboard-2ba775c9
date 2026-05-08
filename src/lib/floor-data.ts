@@ -5,6 +5,13 @@ export interface FloorEvent {
   epoch: number;
   sensor: SensorKey;
   value: number;
+  // Per-tile A/B side data from ESP32 VISIT payloads.
+  // firstTile: 1 = stepped on A first (A → B), 2 = stepped on B first (B → A)
+  firstTile?: 1 | 2;
+  dwellAMs?: number;
+  dwellBMs?: number;
+  peakA?: number;
+  peakB?: number;
 }
 
 export const ZONE_ORDER: SensorKey[] = ["entrance", "aisle_a", "checkout", "aisle_b"];
