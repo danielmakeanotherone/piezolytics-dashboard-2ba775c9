@@ -84,8 +84,21 @@ export function DemoHistory() {
     return counts;
   }, [tagged]);
 
-  const rows = tagged
-    .filter((e) => filter === "all" || e.tileNumber === filter)
+  const enriched = useMemo(() => {
+    const chrono = [...tagged].sort((a, b) => a.epoch - b.epoch);
+    return chrono.map((e, i) => {
+      const prev = i > 0 ? chrono[i - 1] : null;
+      return {
+        ...e,
+        fromTile: prev ? prev.tileNumber : null,
+        toTile: e.tileNumber,
+        dwellMs: prev ? e.epoch - prev.epoch : null,
+      };
+    });
+  }, [tagged]);
+
+  const rows = enriched
+    .filter((e) => filter === "all" || e.toTile === filter || e.fromTile === filter)
     .sort((a, b) => b.epoch - a.epoch)
     .slice(0, 80);
 
@@ -136,46 +149,75 @@ export function DemoHistory() {
       <div className="panel p-6">
         <div
           className="grid text-text3 text-[11px] uppercase tracking-wider px-3 py-2"
-          style={{ gridTemplateColumns: "200px 1fr 160px 120px", borderBottom: "1px solid var(--bord2)" }}
+          style={{ gridTemplateColumns: "180px 1.4fr 110px 120px", borderBottom: "1px solid var(--bord2)" }}
         >
           <div>Time</div>
-          <div>Tile</div>
-          <div>Tag</div>
+          <div>Transition</div>
+          <div>Dwell</div>
           <div className="text-right">Signal</div>
         </div>
         <div className="max-h-[60vh] overflow-auto">
           {rows.length === 0 && (
             <div className="text-text3 text-sm py-12 text-center">No events yet.</div>
           )}
-          {rows.map((e, i) => (
-            <div
-              key={`${e.epoch}-${i}`}
-              className="grid items-center px-3 py-2 text-sm"
-              style={{ gridTemplateColumns: "200px 1fr 160px 120px", borderBottom: "1px solid rgba(74,60,42,.4)" }}
-            >
-              <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
-              <div className="text-text truncate">
-                {labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`}
+          {rows.map((e, i) => {
+            const fromLabel =
+              e.fromTile != null ? labelByNum.get(e.fromTile) ?? `Tile ${e.fromTile}` : null;
+            const toLabel = labelByNum.get(e.toTile) ?? `Tile ${e.toTile}`;
+            return (
+              <div
+                key={`${e.epoch}-${i}`}
+                className="grid items-center px-3 py-2 text-sm"
+                style={{ gridTemplateColumns: "180px 1.4fr 110px 120px", borderBottom: "1px solid rgba(74,60,42,.4)" }}
+              >
+                <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
+                <div className="text-text truncate">
+                  {fromLabel ? (
+                    <>
+                      <span className="text-text2">{fromLabel}</span>
+                      <span className="text-text3 mx-2">→</span>
+                      <span>{toLabel}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-text3 mr-2">first</span>
+                      <span>{toLabel}</span>
+                    </>
+                  )}
+                </div>
+                <div className="text-text2 font-mono text-[12px]">
+                  {e.dwellMs != null ? fmtDur(e.dwellMs) : "—"}
+                </div>
+                <div className="text-right">
+                  <span
+                    className="inline-block px-2.5 py-0.5 rounded-md font-mono text-[12px]"
+                    style={{
+                      background: "rgba(200,168,118,0.12)",
+                      color: "var(--acc)",
+                      border: "1px solid rgba(200,168,118,0.22)",
+                    }}
+                  >
+                    {e.value}
+                  </span>
+                </div>
               </div>
-              <div className="text-text3 font-mono text-[12px]">tile_{e.tileNumber}</div>
-              <div className="text-right">
-                <span
-                  className="inline-block px-2.5 py-0.5 rounded-md font-mono text-[12px]"
-                  style={{
-                    background: "rgba(200,168,118,0.12)",
-                    color: "var(--acc)",
-                    border: "1px solid rgba(200,168,118,0.22)",
-                  }}
-                >
-                  {e.value}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
   );
+}
+
+function fmtDur(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rs = s % 60;
+  if (m < 60) return rs ? `${m}m ${rs}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
 }
 
 function FBtn({
