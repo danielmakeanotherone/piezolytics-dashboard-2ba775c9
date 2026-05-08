@@ -159,7 +159,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }
                   </svg>
                 </div>
                 <div className="iso-side-label">
-                  <span>Tile {String(index + 1).padStart(2, "0")}</span>
+                  <span>Tile {String(tileNum(index)).padStart(2, "0")}</span>
                   <span className="iso-side-count">{count}</span>
                 </div>
               </div>
