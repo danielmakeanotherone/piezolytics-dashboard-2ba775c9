@@ -198,23 +198,6 @@ function HistoryPage() {
                 })}
               </div>
             </div>
-                    <div className="text-text3 font-mono text-[12px]">tile_{e.tileNumber}</div>
-                    <div className="text-right">
-                      <span
-                        className="inline-block px-2.5 py-0.5 rounded-md font-mono text-[12px]"
-                        style={{
-                          background: "rgba(200,168,118,0.12)",
-                          color: "var(--acc)",
-                          border: "1px solid rgba(200,168,118,0.22)",
-                        }}
-                      >
-                        {e.value}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </>
         )}
       </main>
