@@ -149,9 +149,9 @@ function ZonesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tiles.map((t) => (
               <div key={t.id} className="panel p-5 flex items-center justify-between">
-                <div>
-                  <div className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
-                    Tile {t.tile_number}
+                <div className="min-w-0">
+                  <div className="font-display text-text truncate" style={{ fontSize: 22, fontWeight: 600 }}>
+                    {t.label || `Tile ${t.tile_number}`}
                   </div>
                   <div className="font-mono text-text3 text-[12px] mt-1">
                     tile_{t.tile_number}
