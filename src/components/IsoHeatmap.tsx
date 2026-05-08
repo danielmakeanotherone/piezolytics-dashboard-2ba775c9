@@ -394,7 +394,6 @@ function TileDetail({
 
         {range === "Month" ? (
           <div className="iso-heatgrid iso-heatcal">
-            <div className="iso-heatstrip-label">By {cfg.unit}</div>
             <div className="iso-heatcal-body">
               <div className="iso-heatcal-rowlabels">
                 {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
@@ -412,7 +411,7 @@ function TileDetail({
                   return (
                     <span
                       key={i}
-                      className="iso-heatcell"
+                      className="iso-heatcell iso-heatcell-pill"
                       style={{ "--t": (v / heatMax).toFixed(3), gridColumn: col + 1, gridRow: row + 1 } as CSSProperties}
                       title={`${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][row]} · W${col + 1}: ${Math.round(v)}`}
                     />
@@ -423,7 +422,6 @@ function TileDetail({
           </div>
         ) : (
           <div className="iso-heatgrid">
-            <div className="iso-heatstrip-label">By {cfg.unit}</div>
             <div
               className="iso-heatstrip"
               style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
