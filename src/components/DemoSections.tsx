@@ -103,10 +103,10 @@ export function DemoHistory() {
       <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
-            History <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
+            Entries <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
           </h2>
           <p className="text-text3 text-sm mt-1">
-            Per-tile event history sourced from the simulated stream.
+            Per-tile entry history sourced from the simulated stream.
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
