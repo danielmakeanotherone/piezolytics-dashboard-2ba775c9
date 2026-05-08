@@ -125,9 +125,11 @@ function ZonesPage() {
             {tiles.map((t) => (
               <div key={t.id} className="panel p-5 flex items-center justify-between">
                 <div>
-                  <div className="text-text3 text-[11px] uppercase tracking-wider">Tile</div>
-                  <div className="font-display" style={{ fontSize: 28, fontWeight: 600, color: "var(--acc)" }}>
-                    #{String(t.tile_number).padStart(2, "0")}
+                  <div className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
+                    Tile {t.tile_number}
+                  </div>
+                  <div className="font-mono text-text3 text-[12px] mt-1">
+                    tile_{t.tile_number}
                   </div>
                 </div>
                 <button
