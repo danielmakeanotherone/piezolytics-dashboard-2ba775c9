@@ -6,10 +6,12 @@ interface Props {
   events?: FloorEvent[];
   connected?: boolean;
   tileNumbers?: number[];
+  tileLabels?: string[];
 }
 
-export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels }: Props) {
   const tileNum = (i: number) => tileNumbers?.[i] ?? i + 1;
+  const tileLabel = (i: number) => tileLabels?.[i] ?? `Tile ${tileNum(i)}`;
   const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
