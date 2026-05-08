@@ -3,6 +3,7 @@ import { HeroStats } from "@/components/HeroStats";
 import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
 import { useFloorData } from "@/hooks/use-floor-data";
+import { useAuthSession } from "@/hooks/use-auth";
 import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { useEffect, useRef, useState } from "react";
 
