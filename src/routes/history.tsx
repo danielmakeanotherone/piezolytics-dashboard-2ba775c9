@@ -38,9 +38,21 @@ function HistoryPage() {
     return m;
   }, [tiles]);
 
-  const rows = tagged
-    .filter((e) => registeredNums.has(e.tileNumber))
-    .filter((e) => filter === "all" || e.tileNumber === filter)
+  // Build chronological list of registered-tile events to compute transitions + dwell
+  const enriched = useMemo(() => {
+    const chrono = tagged
+      .filter((e) => registeredNums.has(e.tileNumber))
+      .sort((a, b) => a.epoch - b.epoch);
+    return chrono.map((e, i) => {
+      const prev = i > 0 ? chrono[i - 1] : null;
+      const fromTile = prev ? prev.tileNumber : null;
+      const dwellMs = prev ? e.epoch - prev.epoch : null;
+      return { ...e, fromTile, toTile: e.tileNumber, dwellMs };
+    });
+  }, [tagged, registeredNums]);
+
+  const rows = enriched
+    .filter((e) => filter === "all" || e.toTile === filter || e.fromTile === filter)
     .sort((a, b) => b.epoch - a.epoch);
 
   const perTileCounts = useMemo(() => {
