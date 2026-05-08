@@ -89,15 +89,29 @@ function seedDemo() {
       const second = Math.floor(Math.random() * 60);
       const epoch = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second).getTime();
       if (epoch > now) continue;
-      out.push({
-        ts: new Date(epoch).toISOString(),
-        epoch,
-        sensor: pickWeighted(),
-        value: 200 + Math.floor(Math.random() * 800),
-      });
+      out.push(makeDemoEvent(epoch, pickWeighted()));
     }
   }
   demoStore = out.sort((a, b) => a.epoch - b.epoch);
+}
+
+function makeDemoEvent(epoch: number, sensor: SensorKey): FloorEvent {
+  const firstTile: 1 | 2 = Math.random() < 0.5 ? 1 : 2;
+  const dwellA = 250 + Math.floor(Math.random() * 1500);
+  const dwellB = 250 + Math.floor(Math.random() * 1500);
+  const peakA = 240 + Math.floor(Math.random() * 760);
+  const peakB = 240 + Math.floor(Math.random() * 760);
+  return {
+    ts: new Date(epoch).toISOString(),
+    epoch,
+    sensor,
+    value: Math.max(peakA, peakB),
+    firstTile,
+    dwellAMs: dwellA,
+    dwellBMs: dwellB,
+    peakA,
+    peakB,
+  };
 }
 
 export function tickDemo(): FloorEvent[] {
