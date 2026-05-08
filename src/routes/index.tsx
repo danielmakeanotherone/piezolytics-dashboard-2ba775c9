@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { DemoTileManager, DemoHistory } from "@/components/DemoSections";
 import { LogoMark } from "@/components/LogoMark";
+
+type DemoTab = "dashboard" | "zones" | "history";
 
 export const Route = createFileRoute("/")({
   head: () => ({
