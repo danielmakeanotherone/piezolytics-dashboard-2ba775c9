@@ -1,71 +1,147 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
-import { ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
+import { useUserTiles } from "@/hooks/use-user-tiles";
+import { Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/zones")({
   head: () => ({
     meta: [
       { title: "Tile Manager — Piezolytics" },
-      { name: "description", content: "Per-zone breakdown of floor traffic." },
+      { name: "description", content: "Register and manage your floor tiles." },
     ],
   }),
   component: ZonesPage,
 });
 
 function ZonesPage() {
-  const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData();
+  const { conn, lastUpdate, refresh, clearAll } = useFloorData();
+  const { tiles, loading, error, addTile, removeTile } = useUserTiles();
+  const [adding, setAdding] = useState(false);
+  const [tileNum, setTileNum] = useState("");
+  const [submitErr, setSubmitErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitErr(null);
+    const n = parseInt(tileNum, 10);
+    if (!Number.isInteger(n) || n < 1 || n > 9999) {
+      setSubmitErr("Enter a tile number between 1 and 9999");
+      return;
+    }
+    if (tiles.some((t) => t.tile_number === n)) {
+      setSubmitErr(`Tile #${n} is already registered`);
+      return;
+    }
+    setBusy(true);
+    try {
+      await addTile(n);
+      setTileNum("");
+      setAdding(false);
+    } catch (err) {
+      setSubmitErr(err instanceof Error ? err.message : "Failed to add tile");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-bg text-text">
       <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} />
-      <main className="max-w-[1400px] mx-auto px-6 py-8">
-        <h1 className="font-display text-text mb-6" style={{ fontSize: 28, fontWeight: 600 }}>
-          Tile Manager
-        </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {ZONE_ORDER.map((z) => {
-            const c = stats.counts[z];
-            const recent = events.filter((e) => e.sensor === z).sort((a, b) => b.epoch - a.epoch).slice(0, 8);
-            const norm = stats.maxCount ? c / stats.maxCount : 0;
-            return (
-              <div key={z} className="panel p-6">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="text-text text-lg font-medium">{ZONE_LABELS[z]}</h2>
-                  <span style={{ color: "var(--acc)", fontSize: 28, fontWeight: 700 }}>{c}</span>
-                </div>
-                <div className="mt-2 text-text3 text-xs">
-                  {(stats.total ? (c / stats.total) * 100 : 0).toFixed(1)}% of total traffic
-                </div>
-                <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surf3)" }}>
-                  <div
-                    style={{
-                      width: `${Math.max(4, norm * 100)}%`,
-                      height: "100%",
-                      background: "linear-gradient(90deg, var(--acc3), var(--acc))",
-                    }}
-                  />
-                </div>
-                <div className="mt-5">
-                  <div className="text-text3 text-[11px] uppercase tracking-wider mb-2">Recent events</div>
-                  {recent.length === 0 && <div className="text-text3 text-sm">No events.</div>}
-                  {recent.map((e, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-sm py-1.5 border-b last:border-b-0"
-                      style={{ borderColor: "var(--bord2)" }}
-                    >
-                      <span className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</span>
-                      <span style={{ color: "var(--acc)", fontFamily: "ui-monospace, monospace", fontSize: 12 }}>
-                        {e.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+      <main className="max-w-[1100px] mx-auto px-6 py-8">
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <h1 className="font-display text-text" style={{ fontSize: 28, fontWeight: 600 }}>
+              Tile Manager
+            </h1>
+            <p className="text-text3 text-sm mt-1">
+              Register the tile IDs hardcoded into your ESP32 devices.
+            </p>
+          </div>
+          {!adding && (
+            <button
+              onClick={() => { setAdding(true); setSubmitErr(null); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ background: "var(--acc)", color: "#1a1611" }}
+            >
+              <Plus size={16} /> Add Tile
+            </button>
+          )}
         </div>
+
+        {adding && (
+          <form onSubmit={handleAdd} className="panel p-5 mb-6 flex items-end gap-3">
+            <div className="flex-1">
+              <label className="text-text3 text-[11px] uppercase tracking-wider block mb-1.5">
+                Tile #
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={9999}
+                step={1}
+                inputMode="numeric"
+                autoFocus
+                value={tileNum}
+                onChange={(e) => setTileNum(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="e.g. 1"
+                className="w-full px-3 py-2 rounded-lg text-text bg-transparent"
+                style={{ border: "1px solid var(--bord2)" }}
+              />
+              {submitErr && <div className="text-xs mt-1.5" style={{ color: "#e07a6a" }}>{submitErr}</div>}
+            </div>
+            <button
+              type="submit"
+              disabled={busy}
+              className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+              style={{ background: "var(--acc)", color: "#1a1611" }}
+            >
+              {busy ? "Adding…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAdding(false); setTileNum(""); setSubmitErr(null); }}
+              className="px-4 py-2 rounded-lg text-sm text-text2 hover:text-text"
+              style={{ border: "1px solid var(--bord2)" }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+
+        {loading ? (
+          <div className="text-text3 text-sm">Loading tiles…</div>
+        ) : error ? (
+          <div className="text-sm" style={{ color: "#e07a6a" }}>{error}</div>
+        ) : tiles.length === 0 ? (
+          <div className="panel p-10 text-center">
+            <div className="text-text2 text-base mb-1">No tiles registered yet</div>
+            <div className="text-text3 text-sm">Click "Add Tile" to register the first one.</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tiles.map((t) => (
+              <div key={t.id} className="panel p-5 flex items-center justify-between">
+                <div>
+                  <div className="text-text3 text-[11px] uppercase tracking-wider">Tile</div>
+                  <div className="font-display" style={{ fontSize: 28, fontWeight: 600, color: "var(--acc)" }}>
+                    #{String(t.tile_number).padStart(2, "0")}
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeTile(t.id)}
+                  aria-label={`Remove tile ${t.tile_number}`}
+                  className="p-2 rounded-lg text-text3 hover:text-text hover:bg-surf2 transition-colors"
+                  style={{ border: "1px solid var(--bord2)" }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
