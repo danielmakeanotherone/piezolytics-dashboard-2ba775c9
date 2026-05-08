@@ -621,8 +621,6 @@
 .iso-heatcal-cells .iso-heatcell-pill {
   height: 16px;
   border-radius: 999px;
-  width: 38px;
-  justify-self: center;
 }
 
 .iso-heatlegend {
