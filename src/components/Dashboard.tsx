@@ -65,7 +65,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
   const displayName = (() => {
     const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
     const raw = meta?.full_name || meta?.name || user?.email?.split("@")[0] || "";
-    return raw ? raw.split(" ")[0].replace(/\b\w/g, (c) => c.toUpperCase()) : "";
+    return raw ? raw.replace(/\b\w/g, (c) => c.toUpperCase()) : "";
   })();
 
   const peakPct = stats.total ? Math.round((stats.maxCount / stats.total) * 100) : 0;
