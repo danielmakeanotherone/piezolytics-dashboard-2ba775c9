@@ -188,7 +188,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
 
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
-                <div className="text-text font-medium">Hourly Density</div>
+                <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Hourly Density</div>
                 <div
                   className="text-text3 text-[10px] px-2 py-0.5 rounded-md"
                   style={{ border: "1px solid var(--bord2)" }}
