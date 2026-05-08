@@ -19,7 +19,7 @@ export function HeroStats({ stats, userName }: { stats: Stats; userName?: string
           </div>
         )}
         <h1 className="font-display text-text" style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.1 }}>
-          {userName ? <>Hey {userName}, <span style={{ color: "var(--acc)" }}>welcome back</span>!</> : "Floor Analytics"}
+          {userName ? <>Hey {userName}, <span style={{ color: "var(--acc)" }}>Welcome Back</span>!</> : "Floor Analytics"}
         </h1>
         <p className="text-text3 text-sm mt-2">
           Live piezo sensor monitoring · {stats.activeZones} of 4 zones active
