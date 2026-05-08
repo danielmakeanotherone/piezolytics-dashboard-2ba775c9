@@ -28,7 +28,13 @@ function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) navigate({ to: "/dashboard" });
+    if (!session?.user) return;
+    const u = session.user;
+    const created = u.created_at ? new Date(u.created_at).getTime() : 0;
+    const lastSignIn = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : 0;
+    // First-time sign-in (or new account): created and last sign-in within ~30s
+    const isNew = !lastSignIn || Math.abs(lastSignIn - created) < 30_000;
+    navigate({ to: isNew ? "/zones" : "/dashboard" });
   }, [session, navigate]);
 
   const submit = async (e: React.FormEvent) => {
@@ -39,7 +45,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/zones`,
             data: { full_name: fullName.trim() },
           },
         });
@@ -48,7 +54,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/dashboard" });
+        // Redirect handled by useEffect once session updates
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
