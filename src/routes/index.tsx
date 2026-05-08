@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Dashboard } from "@/components/Dashboard";
+import { DemoTileManager, DemoHistory } from "@/components/DemoSections";
 import { LogoMark } from "@/components/LogoMark";
 
 export const Route = createFileRoute("/")({
@@ -97,6 +98,8 @@ function Landing() {
       {/* Demo dashboard preview (random data) */}
       <div id="demo" style={{ scrollMarginTop: 58 }}>
         <Dashboard demo hideNav />
+        <DemoTileManager />
+        <DemoHistory />
       </div>
 
       <section className="max-w-[1400px] mx-auto px-6 py-24 text-center flex flex-col items-center">
