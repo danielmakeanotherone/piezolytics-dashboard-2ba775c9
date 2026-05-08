@@ -1,8 +1,6 @@
-import { ZONE_LABELS } from "@/lib/floor-data";
 import type { Stats } from "@/lib/floor-data";
 
-export function HeroStats({ stats, userName }: { stats: Stats; userName?: string }) {
-  const cards: { label: string; value: string; color: string }[] = [];
+export function HeroStats({ stats, userName, totalTiles }: { stats: Stats; userName?: string; totalTiles: number }) {
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
@@ -22,28 +20,8 @@ export function HeroStats({ stats, userName }: { stats: Stats; userName?: string
           {userName ? <>Hey {userName}, <span style={{ color: "var(--acc)" }}>Welcome Back</span>!</> : "Floor Analytics"}
         </h1>
         <p className="text-text3 text-sm mt-2">
-          Live piezo sensor monitoring · {stats.activeZones} of 4 zones active
+          Live piezo sensor monitoring · {stats.activeTiles} of {totalTiles} {totalTiles === 1 ? "tile" : "tiles"} active
         </p>
-      </div>
-      <div className="flex gap-3">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="text-right px-5 py-4"
-            style={{
-              minWidth: 108,
-              background: "var(--surf)",
-              border: "1px solid rgba(255,255,255,0.055)",
-              borderRadius: 14,
-              boxShadow: "0 2px 8px rgba(0,0,0,.35)",
-            }}
-          >
-            <div style={{ fontSize: 22, fontWeight: 700, color: c.color, fontFamily: "Inter" }}>{c.value}</div>
-            <div className="text-text3" style={{ fontSize: 11, marginTop: 2, letterSpacing: 0.3 }}>
-              {c.label}
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );

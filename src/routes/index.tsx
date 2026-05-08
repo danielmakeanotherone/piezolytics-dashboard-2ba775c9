@@ -96,7 +96,11 @@ function Landing() {
 
       {/* Demo dashboard preview (random data) */}
       <div id="demo" style={{ scrollMarginTop: 58 }}>
-        <Dashboard demo hideNav />
+        <Dashboard
+          demo
+          hideNav
+          tiles={[1, 2, 3, 4].map((n) => ({ id: `demo-${n}`, number: n, label: null }))}
+        />
       </div>
 
       <section className="max-w-[1400px] mx-auto px-6 py-24 text-center flex flex-col items-center">
