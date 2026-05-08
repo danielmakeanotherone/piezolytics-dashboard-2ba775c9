@@ -168,7 +168,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                 <div className="text-text3 text-[11px]">{stats.activeZones} of 4 reporting</div>
               </div>
               <div className="mt-4 flex flex-col gap-2.5">
-                {ZONE_ORDER.map((z) => {
+                {ZONE_ORDER.map((z, i) => {
                   const active = stats.counts[z] > 0;
                   return (
                     <div key={z} className="flex items-center justify-between text-[13px]">
@@ -181,7 +181,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                             display: "inline-block",
                           }}
                         />
-                        {ZONE_LABELS[z]}
+                        Tile #{String(tileNumbers[i]).padStart(2, "0")}
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
                         {active ? `${stats.counts[z]} hits` : "idle"}
