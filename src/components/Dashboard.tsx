@@ -185,7 +185,10 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
                             display: "inline-block",
                           }}
                         />
-                        <span className="font-mono">tile_{tileNumbers[i]}</span>
+                        <span>
+                          {tileLabels[i]}
+                          <span className="font-mono text-text3 ml-1.5 text-[11px]">tile_{tileNumbers[i]}</span>
+                        </span>
                       </div>
                       <span className="text-text3 font-mono text-[11px]">
                         {active ? `${stats.counts[z]} hits` : "idle"}
