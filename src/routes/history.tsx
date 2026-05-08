@@ -141,7 +141,7 @@ function HistoryPage() {
                 style={{ gridTemplateColumns: "180px 1.4fr 110px 120px", borderBottom: "1px solid var(--bord2)" }}
               >
                 <div>Time</div>
-                <div>Transition</div>
+                <div>Tile · Direction</div>
                 <div>Dwell</div>
                 <div className="text-right">Signal</div>
               </div>
