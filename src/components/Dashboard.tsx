@@ -57,10 +57,16 @@ function Wave({ data }: { data: number[] }) {
 
 export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
+  const { user } = useAuthSession();
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
   const connected = conn === "live" || conn === "demo";
+  const displayName = (() => {
+    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    const raw = meta?.full_name || meta?.name || user?.email?.split("@")[0] || "";
+    return raw ? raw.split(" ")[0].replace(/\b\w/g, (c) => c.toUpperCase()) : "";
+  })();
 
   const peakPct = stats.total ? Math.round((stats.maxCount / stats.total) * 100) : 0;
   const lastEvent = events.length ? [...events].sort((a, b) => b.epoch - a.epoch)[0] : null;
