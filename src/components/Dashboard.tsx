@@ -88,7 +88,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
     <div className="min-h-screen bg-bg text-text">
       {!hideNav && <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} onLogout={onLogout} />}
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
-        <HeroStats stats={stats} />
+        <HeroStats stats={stats} userName={displayName} />
 
         <div className="grid items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section className="panel flex min-w-0 flex-col overflow-hidden">
