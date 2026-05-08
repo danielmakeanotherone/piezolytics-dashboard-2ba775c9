@@ -94,7 +94,7 @@ export function DemoHistory() {
   }, [tagged]);
 
   const rows = enriched
-    .filter((e) => filter === "all" || e.toTile === filter || e.fromTile === filter)
+    .filter((e) => filter === "all" || e.tileNumber === filter)
     .sort((a, b) => b.epoch - a.epoch)
     .slice(0, 80);
 
