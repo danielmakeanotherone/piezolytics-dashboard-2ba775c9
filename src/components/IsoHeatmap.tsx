@@ -361,7 +361,7 @@ function TileDetail({
 
         <div className="iso-detail-top">
           <div>
-            <div className="iso-detail-eyebrow">Tile {tileNumber} · tile_{tileNumber}</div>
+            <div className="iso-detail-eyebrow">{tileLabel} · tile_{tileNumber}</div>
             <div className="iso-detail-h1">Analytic view</div>
           </div>
           <div className="iso-detail-share">
