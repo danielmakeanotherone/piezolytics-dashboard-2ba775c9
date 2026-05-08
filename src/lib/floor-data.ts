@@ -1,28 +1,24 @@
-export type SensorKey = "entrance" | "aisle_a" | "checkout" | "aisle_b";
+// Tiles are user-defined. Each tile has a number (1..999) and is reported
+// by the ESP32 with sensor tag `tile_<n>` (e.g. `tile_3`).
 
 export interface FloorEvent {
   ts: string;
   epoch: number;
-  sensor: SensorKey;
+  sensor: string; // tile_<n>
   value: number;
 }
 
-export const ZONE_ORDER: SensorKey[] = ["entrance", "aisle_a", "checkout", "aisle_b"];
+export interface Tile {
+  id: string;
+  number: number;
+  label?: string | null;
+}
 
-export const ZONE_LABELS: Record<SensorKey, string> = {
-  entrance: "Entrance",
-  aisle_a: "Aisle A",
-  checkout: "Checkout",
-  aisle_b: "Aisle B",
-};
-
-// Grid positions (col, row) in 2x2
-export const ZONE_GRID: Record<SensorKey, { col: 0 | 1; row: 0 | 1 }> = {
-  entrance: { col: 0, row: 0 },
-  aisle_a: { col: 1, row: 0 },
-  checkout: { col: 0, row: 1 },
-  aisle_b: { col: 1, row: 1 },
-};
+export const tileKey = (n: number) => `tile_${n}`;
+export const tileLabel = (t: Tile) =>
+  t.label && t.label.trim().length > 0
+    ? t.label
+    : `Tile #${String(t.number).padStart(2, "0")}`;
 
 export const API_BASE = "http://localhost:8080";
 
@@ -36,43 +32,32 @@ export async function clearEvents(): Promise<void> {
   await fetch(`${API_BASE}/clear`, { cache: "no-store" });
 }
 
-// ---- Demo generator (used when backend unreachable) ----
+// ---- Demo generator ----
+// Keyed by serialized tile-number list so switching tile sets reseeds.
 let demoStore: FloorEvent[] = [];
-let demoSeeded = false;
+let demoSeededKey: string | null = null;
 
-function pickWeighted(): SensorKey {
-  // Entrance heaviest, then aisle_a, checkout, aisle_b
-  const r = Math.random();
-  if (r < 0.4) return "entrance";
-  if (r < 0.7) return "aisle_a";
-  if (r < 0.88) return "checkout";
-  return "aisle_b";
-}
+function seedDemo(tiles: Tile[]) {
+  const key = tiles.map((t) => t.number).sort((a, b) => a - b).join(",");
+  if (demoSeededKey === key) return;
+  demoSeededKey = key;
+  demoStore = [];
+  if (tiles.length === 0) return;
 
-function seedDemo() {
-  if (demoSeeded) return;
-  demoSeeded = true;
   const now = Date.now();
   const out: FloorEvent[] = [];
   const DAY = 86400000;
-  // Spread synthetic events across the last ~3 years so Day/Week/Month/Quarter/Year/All
-  // tabs all look lived-in. Each day has its own activity profile (weekday vs weekend,
-  // month-of-year seasonality, hour-of-day rush peaks).
   const daysBack = 365 * 3;
   for (let d = 0; d < daysBack; d++) {
     const dayStart = now - d * DAY;
     const date = new Date(dayStart);
-    const dow = date.getDay(); // 0 Sun .. 6 Sat
+    const dow = date.getDay();
     const month = date.getMonth();
-    // Seasonal multiplier — busier in Nov/Dec, quieter in Jan/Feb
     const season = 1 + 0.35 * Math.sin(((month + 9) / 12) * Math.PI * 2);
-    // Weekend boost
     const weekend = dow === 0 || dow === 6 ? 1.45 : 1;
-    // Decay older days slightly so recent windows feel denser
     const recency = d < 7 ? 1.6 : d < 30 ? 1.25 : d < 90 ? 1 : 0.7;
     const baseEvents = Math.floor((6 + Math.random() * 10) * season * weekend * recency);
     for (let i = 0; i < baseEvents; i++) {
-      // Hour distribution: peaks ~12pm and ~6pm
       const r = Math.random();
       let hour: number;
       if (r < 0.4) hour = 11 + Math.floor(Math.random() * 3);
@@ -82,10 +67,11 @@ function seedDemo() {
       const second = Math.floor(Math.random() * 60);
       const epoch = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second).getTime();
       if (epoch > now) continue;
+      const tile = tiles[Math.floor(Math.random() * tiles.length)];
       out.push({
         ts: new Date(epoch).toISOString(),
         epoch,
-        sensor: pickWeighted(),
+        sensor: tileKey(tile.number),
         value: 200 + Math.floor(Math.random() * 800),
       });
     }
@@ -93,59 +79,72 @@ function seedDemo() {
   demoStore = out.sort((a, b) => a.epoch - b.epoch);
 }
 
-export function tickDemo(): FloorEvent[] {
-  seedDemo();
-  // Add 0–3 new events each tick
+export function tickDemo(tiles: Tile[]): FloorEvent[] {
+  seedDemo(tiles);
+  if (tiles.length === 0) return [];
   const adds = Math.floor(Math.random() * 4);
   const now = Date.now();
   for (let i = 0; i < adds; i++) {
-    const sensor = pickWeighted();
+    const tile = tiles[Math.floor(Math.random() * tiles.length)];
     demoStore.push({
       ts: new Date(now).toISOString(),
       epoch: now,
-      sensor,
+      sensor: tileKey(tile.number),
       value: 200 + Math.floor(Math.random() * 800),
     });
   }
-  // Cap memory
-  if (demoStore.length > 500) demoStore = demoStore.slice(-500);
+  if (demoStore.length > 5000) demoStore = demoStore.slice(-5000);
   return [...demoStore];
 }
 
 export function clearDemo() {
   demoStore = [];
+  demoSeededKey = null;
 }
 
 // ---- Derivations ----
 export interface Stats {
-  counts: Record<SensorKey, number>;
+  counts: Record<string, number>;
+  lastEpoch: Record<string, number>;
   total: number;
-  activeZones: number;
-  peakZone: SensorKey | null;
+  activeTiles: number;
+  peakTile: number | null;
   maxCount: number;
 }
 
-export function computeStats(events: FloorEvent[]): Stats {
-  const counts: Record<SensorKey, number> = {
-    entrance: 0,
-    aisle_a: 0,
-    checkout: 0,
-    aisle_b: 0,
-  };
-  for (const e of events) {
-    if (counts[e.sensor] !== undefined) counts[e.sensor]++;
+const RECENT_MS = 60_000;
+
+export function computeStats(events: FloorEvent[], tiles: Tile[]): Stats {
+  const counts: Record<string, number> = {};
+  const lastEpoch: Record<string, number> = {};
+  for (const t of tiles) {
+    counts[tileKey(t.number)] = 0;
+    lastEpoch[tileKey(t.number)] = 0;
   }
-  const total = events.length;
-  const activeZones = ZONE_ORDER.filter((z) => counts[z] > 0).length;
-  let peakZone: SensorKey | null = null;
+  let total = 0;
+  for (const e of events) {
+    if (counts[e.sensor] === undefined) continue; // not one of our tiles
+    counts[e.sensor]++;
+    total++;
+    if (e.epoch > lastEpoch[e.sensor]) lastEpoch[e.sensor] = e.epoch;
+  }
+  const now = Date.now();
+  const activeTiles = tiles.filter((t) => now - lastEpoch[tileKey(t.number)] < RECENT_MS).length;
+  let peakTile: number | null = null;
   let maxCount = 0;
-  for (const z of ZONE_ORDER) {
-    if (counts[z] > maxCount) {
-      maxCount = counts[z];
-      peakZone = z;
+  for (const t of tiles) {
+    const c = counts[tileKey(t.number)];
+    if (c > maxCount) {
+      maxCount = c;
+      peakTile = t.number;
     }
   }
-  return { counts, total, activeZones, peakZone, maxCount };
+  return { counts, lastEpoch, total, activeTiles, peakTile, maxCount };
+}
+
+export function isTileConnected(stats: Stats, tile: Tile): boolean {
+  const last = stats.lastEpoch[tileKey(tile.number)] ?? 0;
+  return Date.now() - last < RECENT_MS;
 }
 
 export function bucketSparkline(events: FloorEvent[], buckets = 24, windowMs = 60 * 60 * 1000): number[] {
