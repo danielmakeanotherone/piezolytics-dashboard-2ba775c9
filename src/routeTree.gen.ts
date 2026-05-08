@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZonesRouteImport } from './routes/zones'
+import { Route as OutlineRouteImport } from './routes/outline'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as HeatmapRouteImport } from './routes/heatmap'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -19,6 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const ZonesRoute = ZonesRouteImport.update({
   id: '/zones',
   path: '/zones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OutlineRoute = OutlineRouteImport.update({
+  id: '/outline',
+  path: '/outline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/heatmap': typeof HeatmapRoute
   '/history': typeof HistoryRoute
+  '/outline': typeof OutlineRoute
   '/zones': typeof ZonesRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/heatmap': typeof HeatmapRoute
   '/history': typeof HistoryRoute
+  '/outline': typeof OutlineRoute
   '/zones': typeof ZonesRoute
 }
 export interface FileRoutesById {
@@ -70,13 +78,28 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/heatmap': typeof HeatmapRoute
   '/history': typeof HistoryRoute
+  '/outline': typeof OutlineRoute
   '/zones': typeof ZonesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/heatmap' | '/history' | '/zones'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/heatmap'
+    | '/history'
+    | '/outline'
+    | '/zones'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/heatmap' | '/history' | '/zones'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/heatmap'
+    | '/history'
+    | '/outline'
+    | '/zones'
   id:
     | '__root__'
     | '/'
@@ -84,6 +107,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/heatmap'
     | '/history'
+    | '/outline'
     | '/zones'
   fileRoutesById: FileRoutesById
 }
@@ -93,6 +117,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   HeatmapRoute: typeof HeatmapRoute
   HistoryRoute: typeof HistoryRoute
+  OutlineRoute: typeof OutlineRoute
   ZonesRoute: typeof ZonesRoute
 }
 
@@ -103,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/zones'
       fullPath: '/zones'
       preLoaderRoute: typeof ZonesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/outline': {
+      id: '/outline'
+      path: '/outline'
+      fullPath: '/outline'
+      preLoaderRoute: typeof OutlineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -149,8 +181,18 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   HeatmapRoute: HeatmapRoute,
   HistoryRoute: HistoryRoute,
+  OutlineRoute: OutlineRoute,
   ZonesRoute: ZonesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
