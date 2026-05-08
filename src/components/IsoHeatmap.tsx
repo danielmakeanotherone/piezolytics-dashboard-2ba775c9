@@ -299,9 +299,6 @@ function TileDetail({
     return buckets;
   }, [zoneEvents, count, range, index, cfg.count, cfg.cols, cfg.rows]);
 
-  const minVal = Math.round(Math.min(...series));
-  const maxVal = Math.round(Math.max(...series));
-  const avgVal = Math.round(series.reduce((s, v) => s + v, 0) / series.length);
   const heatMax = Math.max(1, ...series);
 
   const last = zoneEvents.length ? zoneEvents[zoneEvents.length - 1] : null;
