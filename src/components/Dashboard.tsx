@@ -118,7 +118,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
             <div className="panel p-6">
               <div className="flex items-baseline justify-between">
                 <div>
-                  <div className="text-text font-medium">Traffic Intensity</div>
+                  <div className="font-display text-text" style={{ fontSize: 18, fontWeight: 600 }}>Traffic Intensity</div>
                   <div className="text-text3 text-[12px] mt-1">
                     Peak Zone: {stats.peakZone ? ZONE_LABELS[stats.peakZone] : "—"}
                   </div>
