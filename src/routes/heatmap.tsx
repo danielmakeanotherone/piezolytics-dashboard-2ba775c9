@@ -3,13 +3,16 @@ import { type CSSProperties, useMemo, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useUserTiles } from "@/hooks/use-user-tiles";
+import { useRoomLayout } from "@/hooks/use-room-layout";
 import { ZONE_ORDER } from "@/lib/floor-data";
+import { OUTLINE_COLS, OUTLINE_ROWS, OUTLINE_DEFS, type OutlineElement } from "@/components/OutlineBuilder";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/heatmap")({
   head: () => ({
     meta: [
       { title: "Heat Map — Piezolytics" },
-      { name: "description", content: "Activity heat map across registered floor tiles." },
+      { name: "description", content: "Visit intensity heat map across your room layout." },
     ],
   }),
   component: HeatMapPage,
@@ -18,71 +21,115 @@ export const Route = createFileRoute("/heatmap")({
 type RangeKey = "Day" | "Week" | "Month" | "Quarter" | "Year" | "All";
 const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
 
+function rangeStart(range: RangeKey): number {
+  const now = Date.now();
+  switch (range) {
+    case "Day": return now - 86400000;
+    case "Week": return now - 7 * 86400000;
+    case "Month": return now - 30 * 86400000;
+    case "Quarter": return now - 91 * 86400000;
+    case "Year": return now - 365 * 86400000;
+    case "All": return 0;
+  }
+}
+
+// Red (hot) → orange → yellow → cool dark
+function heatColor(t: number): string {
+  // t in [0,1]
+  if (t <= 0) return "color-mix(in srgb, var(--surf2) 100%, transparent)";
+  // gradient stops
+  const stops = [
+    { p: 0.0,  c: [60, 20, 20] },     // dark
+    { p: 0.25, c: [255, 220, 80] },   // yellow
+    { p: 0.55, c: [255, 150, 40] },   // orange
+    { p: 0.8,  c: [255, 80, 30] },    // red-orange
+    { p: 1.0,  c: [220, 30, 30] },    // red
+  ];
+  let a = stops[0], b = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t >= stops[i].p && t <= stops[i + 1].p) { a = stops[i]; b = stops[i + 1]; break; }
+  }
+  const k = (t - a.p) / Math.max(0.0001, (b.p - a.p));
+  const r = Math.round(a.c[0] + (b.c[0] - a.c[0]) * k);
+  const g = Math.round(a.c[1] + (b.c[1] - a.c[1]) * k);
+  const bl = Math.round(a.c[2] + (b.c[2] - a.c[2]) * k);
+  return `rgb(${r}, ${g}, ${bl})`;
+}
+
 function HeatMapPage() {
   const { events, conn, lastUpdate, refresh, clearAll } = useFloorData();
-  const { tiles, loading } = useUserTiles();
+  const { tiles, loading: tilesLoading } = useUserTiles();
+  const { elements, loading: layoutLoading } = useRoomLayout();
   const [range, setRange] = useState<RangeKey>("Week");
 
-  const tagged = useMemo(
-    () =>
-      events.map((e) => {
-        const idx = ZONE_ORDER.indexOf(e.sensor);
-        return { ...e, tileNumber: idx >= 0 ? idx + 1 : -1 };
-      }),
-    [events],
-  );
-
-  const cfg = useMemo(() => {
-    switch (range) {
-      case "Day":
-        return { count: 24, labels: (i: number) => (i % 3 === 0 ? `${i.toString().padStart(2, "0")}h` : "") };
-      case "Week":
-        return { count: 7, labels: (i: number) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i] };
-      case "Month":
-        return { count: 30, labels: (i: number) => (i % 5 === 0 ? `d${i + 1}` : "") };
-      case "Quarter":
-        return { count: 13, labels: (i: number) => `W${i + 1}` };
-      case "Year":
-        return { count: 12, labels: (i: number) => ["J","F","M","A","M","J","J","A","S","O","N","D"][i] };
-      case "All":
-        return { count: 5, labels: (i: number) => `${new Date().getFullYear() - (4 - i)}` };
+  const counts = useMemo(() => {
+    const start = rangeStart(range);
+    const map = new Map<number, number>();
+    for (const e of events) {
+      if (e.epoch < start) continue;
+      const idx = ZONE_ORDER.indexOf(e.sensor);
+      const tn = idx >= 0 ? idx + 1 : -1;
+      if (tn < 0) continue;
+      map.set(tn, (map.get(tn) ?? 0) + 1);
     }
-  }, [range]);
+    return map;
+  }, [events, range]);
 
-  const matrix = useMemo(() => {
-    // rows = tiles, cols = cfg.count
-    const rows = tiles.map((t) => {
-      const buckets = new Array<number>(cfg.count).fill(0);
-      const tileEvents = tagged.filter((e) => e.tileNumber === t.tile_number);
-      const now = new Date();
-      for (const e of tileEvents) {
-        const d = new Date(e.epoch);
-        let idx = -1;
-        if (range === "Day") {
-          if (d.toDateString() === now.toDateString()) idx = d.getHours();
-        } else if (range === "Week") {
-          const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-          if (diffDays >= 0 && diffDays < 7) idx = 6 - diffDays;
-        } else if (range === "Month") {
-          const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-          if (diffDays >= 0 && diffDays < 30) idx = 29 - diffDays;
-        } else if (range === "Quarter") {
-          const diffWeeks = Math.floor((now.getTime() - d.getTime()) / (86400000 * 7));
-          if (diffWeeks >= 0 && diffWeeks < cfg.count) idx = cfg.count - 1 - diffWeeks;
-        } else if (range === "Year") {
-          if (d.getFullYear() === now.getFullYear()) idx = d.getMonth();
-        } else {
-          const diffYears = now.getFullYear() - d.getFullYear();
-          if (diffYears >= 0 && diffYears < 5) idx = 4 - diffYears;
-        }
-        if (idx >= 0) buckets[idx]++;
-      }
-      return { tile: t, buckets };
-    });
-    return rows;
-  }, [tiles, tagged, cfg.count, range]);
+  const tileEls = elements.filter((e) => e.type === "tile" && e.tileNumber != null);
+  const maxCount = Math.max(1, ...tileEls.map((e) => counts.get(e.tileNumber!) ?? 0));
 
-  const heatMax = Math.max(1, ...matrix.flatMap((r) => r.buckets));
+  const renderEl = (el: OutlineElement) => {
+    const def = OUTLINE_DEFS.find((d) => d.type === el.type)!;
+    const Icon = def.icon;
+    const isTile = el.type === "tile" && el.tileNumber != null;
+    const c = isTile ? (counts.get(el.tileNumber!) ?? 0) : 0;
+    const t = isTile ? c / maxCount : 0;
+    const minDim = Math.min(el.w, el.h);
+    const iconSize = Math.max(10, Math.min(16, minDim * 8 + 4));
+    const labelText = isTile ? `#${el.tileNumber}` : el.name;
+    return (
+      <div
+        key={el.id}
+        className="absolute flex items-center justify-center"
+        style={{
+          left: `${(el.x / OUTLINE_COLS) * 100}%`,
+          top: `${(el.y / OUTLINE_ROWS) * 100}%`,
+          width: `${(el.w / OUTLINE_COLS) * 100}%`,
+          height: `${(el.h / OUTLINE_ROWS) * 100}%`,
+          background: isTile
+            ? heatColor(t)
+            : `color-mix(in srgb, var(--acc) ${def.tint * 50}%, var(--surf2))`,
+          border: `1.5px solid ${isTile ? "color-mix(in srgb, #000 25%, transparent)" : "var(--bord2)"}`,
+          color: "var(--text)",
+          borderRadius: 4,
+          opacity: isTile ? 1 : 0.55,
+          boxShadow: isTile && t > 0 ? `0 0 ${Math.round(t * 18)}px color-mix(in srgb, ${heatColor(t)} ${Math.round(t * 60)}%, transparent)` : undefined,
+        }}
+        title={isTile ? `Tile #${el.tileNumber}: ${c} visits` : el.name}
+      >
+        <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
+          <Icon size={iconSize} style={{ color: isTile ? "rgba(0,0,0,0.7)" : "var(--text3)" }} />
+          <span
+            className="font-medium truncate max-w-full leading-none"
+            style={{
+              fontSize: Math.max(7, Math.min(10, minDim * 4 + 6)),
+              color: isTile ? "rgba(0,0,0,0.85)" : "var(--text2)",
+            }}
+          >
+            {labelText}
+          </span>
+          {isTile && (
+            <span
+              className="font-mono leading-none"
+              style={{ fontSize: Math.max(7, Math.min(9, minDim * 3 + 5)), color: "rgba(0,0,0,0.7)" }}
+            >
+              {c}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -94,7 +141,7 @@ function HeatMapPage() {
               Heat Map
             </h1>
             <p className="text-text3 text-sm mt-1">
-              Activity intensity across each registered tile over time.
+              Visit intensity overlaid on your room layout. Red = hottest.
             </p>
           </div>
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--surf2)", border: "1px solid var(--bord2)" }}>
@@ -114,56 +161,58 @@ function HeatMapPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-text3 text-sm">Loading tiles…</div>
-        ) : tiles.length === 0 ? (
+        {layoutLoading || tilesLoading ? (
+          <div className="text-text3 text-sm">Loading…</div>
+        ) : elements.length === 0 ? (
           <div className="panel p-10 text-center">
-            <div className="text-text2 text-base mb-1">No tiles registered</div>
-            <div className="text-text3 text-sm">
-              Add tiles in Tile Manager to start visualizing the heat map.
+            <div className="text-text2 text-base mb-1">No layout yet</div>
+            <div className="text-text3 text-sm mb-4">
+              Build your room in Outline Builder and place tiles to see them light up here.
             </div>
+            <Link to="/outline" className="inline-block px-4 py-2 rounded-md text-sm" style={{ background: "var(--acc)", color: "var(--bg)" }}>
+              Open Outline Builder
+            </Link>
           </div>
         ) : (
-          <div className="panel p-6">
-            <div className="flex flex-col gap-2">
-              {matrix.map(({ tile, buckets }) => (
-                <div key={tile.id} className="grid items-center gap-3" style={{ gridTemplateColumns: "180px 1fr 64px" }}>
-                  <div className="min-w-0">
-                    <div className="text-text text-sm truncate">{tile.label || `Tile ${tile.tile_number}`}</div>
-                    <div className="font-mono text-text3 text-[11px]">tile_{tile.tile_number}</div>
-                  </div>
-                  <div className="iso-heatstrip" style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}>
-                    {buckets.map((v, i) => (
-                      <span
-                        key={i}
-                        className="iso-heatcell iso-heatcell-red"
-                        style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
-                        title={`${cfg.labels(i) || `#${i + 1}`}: ${v}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-right font-mono text-text2 text-[12px]">
-                    {buckets.reduce((s, v) => s + v, 0)}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="panel p-4">
             <div
-              className="iso-heatstrip-axis mt-3"
-              style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)`, marginLeft: 192, marginRight: 76 } as CSSProperties}
+              className="relative rounded-lg overflow-hidden"
+              style={{
+                aspectRatio: `${OUTLINE_COLS}/${OUTLINE_ROWS}`,
+                background: "var(--surf)",
+                border: "1px solid var(--bord2)",
+              }}
             >
-              {Array.from({ length: cfg.count }).map((_, i) => (
-                <span key={i} className="iso-heatstrip-tick">{cfg.labels(i)}</span>
-              ))}
-            </div>
-            <div className="iso-heatlegend mt-4">
-              <span className="iso-heatlegend-label">Less</span>
-              <span className="iso-heatlegend-scale">
-                {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => (
-                  <span key={t} className="iso-heatcell iso-heatcell-red iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
+              <div
+                className="absolute inset-0 grid"
+                style={{
+                  gridTemplateColumns: `repeat(${OUTLINE_COLS}, 1fr)`,
+                  gridTemplateRows: `repeat(${OUTLINE_ROWS}, 1fr)`,
+                }}
+              >
+                {Array.from({ length: OUTLINE_ROWS * OUTLINE_COLS }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      borderRight: "1px solid color-mix(in srgb, var(--bord2) 30%, transparent)",
+                      borderBottom: "1px solid color-mix(in srgb, var(--bord2) 30%, transparent)",
+                    }}
+                  />
                 ))}
-              </span>
-              <span className="iso-heatlegend-label">More events</span>
+              </div>
+              {elements.map(renderEl)}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-3 mt-4">
+              <span className="text-text3 text-xs">Less</span>
+              <div className="flex-1 h-3 rounded-full overflow-hidden flex">
+                {Array.from({ length: 40 }).map((_, i) => (
+                  <span key={i} style={{ flex: 1, background: heatColor(i / 39) } as CSSProperties} />
+                ))}
+              </div>
+              <span className="text-text3 text-xs">More visits</span>
+              <span className="text-text3 text-xs font-mono ml-2">peak {maxCount}</span>
             </div>
           </div>
         )}
