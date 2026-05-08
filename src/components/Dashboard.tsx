@@ -3,6 +3,7 @@ import { HeroStats } from "@/components/HeroStats";
 import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
 import { useFloorData } from "@/hooks/use-floor-data";
+import { useAuthSession } from "@/hooks/use-auth";
 import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { useEffect, useRef, useState } from "react";
 
@@ -56,10 +57,16 @@ function Wave({ data }: { data: number[] }) {
 
 export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
   const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
+  const { user } = useAuthSession();
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
   const connected = conn === "live" || conn === "demo";
+  const displayName = (() => {
+    const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    const raw = meta?.full_name || meta?.name || user?.email?.split("@")[0] || "";
+    return raw ? raw.split(" ")[0].replace(/\b\w/g, (c) => c.toUpperCase()) : "";
+  })();
 
   const peakPct = stats.total ? Math.round((stats.maxCount / stats.total) * 100) : 0;
   const lastEvent = events.length ? [...events].sort((a, b) => b.epoch - a.epoch)[0] : null;
@@ -81,7 +88,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
     <div className="min-h-screen bg-bg text-text">
       {!hideNav && <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} onLogout={onLogout} />}
       <main className="max-w-[1400px] mx-auto px-6 pb-12">
-        <HeroStats stats={stats} />
+        <HeroStats stats={stats} userName={displayName} />
 
         <div className="grid items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section className="panel flex min-w-0 flex-col overflow-hidden">

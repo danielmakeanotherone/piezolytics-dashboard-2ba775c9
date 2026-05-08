@@ -719,3 +719,121 @@
   0%,100% { opacity: .4; }
   50%     { opacity: 1; }
 }
+
+/* ---- Tile detail charts ---- */
+.iso-detail-charts {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.iso-chart-timeline { grid-column: 1 / -1; }
+.iso-chart-card {
+  background: var(--surf);
+  border: 1px solid var(--bord2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.iso-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.iso-chart-title {
+  font: 600 13px/1.1 "Lora", Georgia, serif;
+  color: var(--text);
+}
+.iso-chart-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+}
+.iso-chart-stats {
+  display: flex;
+  gap: 12px;
+}
+.iso-chart-stats span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+}
+.iso-chart-stats b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  color: var(--acc);
+  font-weight: 600;
+}
+.iso-chart-stats small {
+  font-size: 9.5px;
+  color: var(--text3);
+  margin-top: 4px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.iso-chart-bars {
+  display: grid;
+  align-items: end;
+  gap: 3px;
+  height: 90px;
+  padding-top: 4px;
+}
+.iso-chart-bar-wrap {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+.iso-chart-bar {
+  width: 100%;
+  background: color-mix(in srgb, var(--acc) 35%, transparent);
+  border-radius: 3px 3px 1px 1px;
+  transition: height .35s ease;
+}
+.iso-chart-bar.is-peak {
+  background: var(--acc);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--acc) 50%, transparent);
+}
+.iso-chart-line {
+  width: 100%;
+  height: 90px;
+  display: block;
+}
+.iso-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.iso-timeline-track {
+  position: relative;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--surf2) 80%, transparent),
+    color-mix(in srgb, var(--surf2) 40%, transparent));
+  border: 1px solid var(--bord2);
+  overflow: hidden;
+}
+.iso-timeline-tick {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--bord2) 70%, transparent);
+}
+.iso-timeline-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--acc) calc(40% + var(--t, 0.5) * 60%), transparent);
+  box-shadow: 0 0 calc(2px + var(--t, 0.5) * 8px) color-mix(in srgb, var(--acc) 60%, transparent);
+}
