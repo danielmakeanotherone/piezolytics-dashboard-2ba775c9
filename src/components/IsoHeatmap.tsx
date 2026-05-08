@@ -458,20 +458,107 @@ function TileDetail({
           <span className="iso-heatlegend-label">More events</span>
         </div>
 
-        <div className="iso-detail-section">
-          <div className="iso-detail-section-title">
-            <span>Recent events</span>
-            <span className="iso-detail-section-meta">last hit {last ? new Date(last.epoch).toLocaleTimeString([], { hour12: false }) : "—"}</span>
+        <div className="iso-detail-charts">
+          <div className="iso-chart-card">
+            <div className="iso-chart-head">
+              <div>
+                <div className="iso-chart-title">Visits Today</div>
+                <div className="iso-chart-sub">Hourly · {visitsToday.reduce((s, v) => s + v, 0)} total</div>
+              </div>
+              <div className="iso-chart-stats">
+                <span><b>{vtMin}</b><small>min</small></span>
+                <span><b>{Math.round(vtAvg)}</b><small>avg</small></span>
+                <span><b>{vtMax}</b><small>max</small></span>
+              </div>
+            </div>
+            <div className="iso-chart-bars" style={{ gridTemplateColumns: `repeat(24, 1fr)` } as CSSProperties}>
+              {visitsToday.map((v, h) => {
+                const t = vtMax ? v / vtMax : 0;
+                const isPeak = v === vtMax && v > 0;
+                return (
+                  <div key={h} className="iso-chart-bar-wrap" title={`${h.toString().padStart(2,"0")}:00 — ${v} visits`}>
+                    <div className={isPeak ? "iso-chart-bar is-peak" : "iso-chart-bar"} style={{ height: `${Math.max(4, t * 100)}%` } as CSSProperties} />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="iso-chart-axis">
+              <span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>24h</span>
+            </div>
           </div>
-          <ul className="iso-detail-events">
-            {recent.length === 0 && <li className="iso-detail-empty">No recent events</li>}
-            {recent.map((e, i) => (
-              <li key={i}>
-                <span className="time">{new Date(e.epoch).toLocaleTimeString([], { hour12: false })}</span>
-                <span className="sig">{e.value}</span>
-              </li>
-            ))}
-          </ul>
+
+          <div className="iso-chart-card">
+            <div className="iso-chart-head">
+              <div>
+                <div className="iso-chart-title">Avg Dwell Times</div>
+                <div className="iso-chart-sub">Seconds spent · today</div>
+              </div>
+              <div className="iso-chart-stats">
+                <span><b>{dwellAvg}s</b><small>avg</small></span>
+                <span><b>{dwellMax}s</b><small>peak</small></span>
+              </div>
+            </div>
+            <svg className="iso-chart-line" viewBox="0 0 240 80" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="dwellFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="var(--acc)" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="var(--acc)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {(() => {
+                const W = 240, H = 80, P = 6;
+                const pts = dwellSeries.map((v, i) => {
+                  const x = P + (i / 23) * (W - P * 2);
+                  const y = H - P - (v / dwellMax) * (H - P * 2);
+                  return [x, y] as const;
+                });
+                const path = pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(" ");
+                const fill = `${path} L${pts[pts.length - 1][0]},${H} L${pts[0][0]},${H} Z`;
+                return (
+                  <>
+                    <path d={fill} fill="url(#dwellFill)" />
+                    <path d={path} stroke="var(--acc)" strokeWidth="1.6" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    {pts.map(([x, y], i) => i % 3 === 0 && <circle key={i} cx={x} cy={y} r="1.6" fill="var(--acc)" />)}
+                  </>
+                );
+              })()}
+            </svg>
+            <div className="iso-chart-axis">
+              <span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>24h</span>
+            </div>
+          </div>
+
+          <div className="iso-chart-card iso-chart-timeline">
+            <div className="iso-chart-head">
+              <div>
+                <div className="iso-chart-title">Tracking Timeline</div>
+                <div className="iso-chart-sub">Last hit {last ? new Date(last.epoch).toLocaleTimeString([], { hour12: false }) : "—"}</div>
+              </div>
+            </div>
+            <div className="iso-timeline-track">
+              {Array.from({ length: 24 }).map((_, h) => (
+                <span key={h} className="iso-timeline-tick" style={{ left: `${(h / 24) * 100}%` } as CSSProperties} />
+              ))}
+              {zoneEvents.slice(-40).map((e, i) => {
+                const d = new Date(e.epoch);
+                const today = d.toDateString() === new Date().toDateString();
+                if (!today) return null;
+                const pct = ((d.getHours() * 60 + d.getMinutes()) / (24 * 60)) * 100;
+                const intensity = Math.min(1, e.value / 800);
+                return (
+                  <span
+                    key={i}
+                    className="iso-timeline-dot"
+                    style={{ left: `${pct}%`, "--t": intensity.toFixed(2) } as CSSProperties}
+                    title={`${d.toLocaleTimeString([], { hour12: false })} — ${e.value}`}
+                  />
+                );
+              })}
+            </div>
+            <div className="iso-chart-axis">
+              <span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>24h</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
