@@ -22,6 +22,7 @@ function AuthPage() {
   const { session } = useAuthSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -37,7 +38,10 @@ function AuthPage() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { full_name: fullName.trim() },
+          },
         });
         if (error) throw error;
         setInfo("Check your email to confirm your account, then log in.");
