@@ -437,8 +437,8 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           const Icon = def.icon;
           const isSelected = selectedId === el.id;
           const minDim = Math.min(el.w, el.h);
-          const showLabel = isSelected && (el.w >= 3 || el.h >= 2);
-          const iconSize = Math.max(10, Math.min(18, minDim * 10 + 4));
+          const iconSize = Math.max(10, Math.min(16, minDim * 8 + 4));
+          const labelText = el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name;
           return (
             <div
               key={el.id}
@@ -457,26 +457,18 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
               }}
               title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""}`}
             >
-              <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.9 }} />
-              {showLabel && (
-                <span className="text-[10px] font-medium truncate px-1 ml-1" style={{ color: "var(--text)" }}>
-                  {el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name}
-                </span>
-              )}
-              {el.type === "tile" && (el.w >= 1 && el.h >= 1) && el.tileNumber != null && !showLabel && (
+              <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
+                <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.9 }} />
                 <span
-                  className="absolute font-mono"
+                  className="font-medium truncate max-w-full leading-none"
                   style={{
-                    bottom: 1,
-                    right: 2,
-                    fontSize: 8,
-                    color: "var(--acc)",
-                    lineHeight: 1,
+                    fontSize: Math.max(7, Math.min(10, minDim * 4 + 6)),
+                    color: "var(--text)",
                   }}
                 >
-                  {el.tileNumber}
+                  {labelText}
                 </span>
-              )}
+              </div>
 
               {/* Resize handles (only when selected & not a tile) */}
               {isSelected && !readOnly && el.type !== "tile" && (
