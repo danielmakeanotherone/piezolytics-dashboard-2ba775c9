@@ -240,12 +240,12 @@ function TileDetail({
   const share = stats.total ? Math.round((count / stats.total) * 100) : 0;
   const zoneEvents = useMemo(() => events.filter((e) => e.sensor === zone), [events, zone]);
 
-  // Bucket config per range. Each range produces a 1-row strip of buckets,
-  // letting Day=hours, Week=days, Month=weeks, Quarter=days, Year=months, All=years.
-  const bucketConfig: Record<RangeKey, { count: number; unit: string; labels: (i: number) => string }> = {
+  // Bucket config per range. Most ranges produce a 1-row strip; Month renders as
+  // a 2D grid (weekday rows × week columns) like a contribution calendar.
+  const bucketConfig: Record<RangeKey, { count: number; unit: string; rows?: number; cols?: number; labels: (i: number) => string }> = {
     Day:     { count: 24, unit: "hour",  labels: (i) => (i % 3 === 0 ? `${i.toString().padStart(2, "0")}h` : "") },
     Week:    { count: 7,  unit: "day",   labels: (i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i] },
-    Month:   { count: 30, unit: "day",   labels: (i) => (i % 5 === 0 ? `D${i + 1}` : "") },
+    Month:   { count: 35, unit: "day",   rows: 7, cols: 5, labels: (i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i] },
     Quarter: { count: 13, unit: "week",  labels: (i) => `W${i + 1}` },
     Year:    { count: 12, unit: "month", labels: (i) => ["J","F","M","A","M","J","J","A","S","O","N","D"][i] },
     All:     { count: 5,  unit: "year",  labels: (i) => `${new Date().getFullYear() - (4 - i)}` },
@@ -254,7 +254,6 @@ function TileDetail({
 
   const series = useMemo(() => {
     const buckets = new Array<number>(cfg.count).fill(0);
-    // 1) Project real events into the right bucket for this range
     for (const e of zoneEvents) {
       const d = new Date(e.epoch);
       const now = new Date();
@@ -265,8 +264,14 @@ function TileDetail({
         const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
         if (diffDays >= 0 && diffDays < 7) idx = 6 - diffDays;
       } else if (range === "Month") {
-        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
-          idx = Math.min(cfg.count - 1, d.getDate() - 1);
+        const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+        if (diffDays >= 0 && diffDays < 35) {
+          const cols = cfg.cols!;
+          const weeksAgo = Math.floor(diffDays / 7);
+          const col = cols - 1 - weeksAgo;
+          const jsDow = d.getDay();
+          const row = (jsDow + 6) % 7; // Mon=0..Sun=6
+          if (col >= 0 && col < cols) idx = row * cols + col;
         }
       } else if (range === "Quarter") {
         const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
@@ -280,7 +285,6 @@ function TileDetail({
       }
       if (idx >= 0) buckets[idx]++;
     }
-    // 2) Overlay deterministic synthetic data so the strip looks lived-in
     const seed = (index + 1) * 991 + range.length * 17;
     const rand = (n: number) => {
       const x = Math.sin(seed + n * 12.9898) * 43758.5453;
@@ -288,13 +292,12 @@ function TileDetail({
     };
     const rangeBoost = { Day: 0.4, Week: 1, Month: 1.4, Quarter: 1.8, Year: 2.2, All: 2.6 }[range];
     for (let i = 0; i < cfg.count; i++) {
-      // Soft middle-bias bell so peaks land mid-range
       const center = (cfg.count - 1) / 2;
       const bias = Math.max(0.2, 1 - Math.abs(i - center) / cfg.count);
       buckets[i] += (count / 4) * bias * (0.4 + rand(i) * 1.1) * rangeBoost;
     }
     return buckets;
-  }, [zoneEvents, count, range, index, cfg.count]);
+  }, [zoneEvents, count, range, index, cfg.count, cfg.cols, cfg.rows]);
 
   const minVal = Math.round(Math.min(...series));
   const maxVal = Math.round(Math.max(...series));
@@ -349,30 +352,61 @@ function TileDetail({
           </div>
         </div>
 
-        <div className="iso-heatgrid">
-          <div className="iso-heatstrip-label">By {cfg.unit}</div>
-          <div
-            className="iso-heatstrip"
-            style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
-          >
-            {series.map((v, i) => (
-              <span
-                key={i}
-                className="iso-heatcell"
-                style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
-                title={`${cfg.labels(i) || `#${i + 1}`}: ${Math.round(v)}`}
-              />
-            ))}
+        {range === "Month" ? (
+          <div className="iso-heatgrid iso-heatcal">
+            <div className="iso-heatstrip-label">By {cfg.unit}</div>
+            <div className="iso-heatcal-body">
+              <div className="iso-heatcal-rowlabels">
+                {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
+                  <span key={d} className="iso-heatstrip-tick">{d}</span>
+                ))}
+              </div>
+              <div
+                className="iso-heatcal-cells"
+                style={{ gridTemplateColumns: `repeat(${cfg.cols}, 1fr)`, gridTemplateRows: `repeat(${cfg.rows}, 1fr)` } as CSSProperties}
+              >
+                {series.map((v, i) => {
+                  const cols = cfg.cols!;
+                  const row = Math.floor(i / cols);
+                  const col = i % cols;
+                  return (
+                    <span
+                      key={i}
+                      className="iso-heatcell"
+                      style={{ "--t": (v / heatMax).toFixed(3), gridColumn: col + 1, gridRow: row + 1 } as CSSProperties}
+                      title={`${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][row]} · W${col + 1}: ${Math.round(v)}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div
-            className="iso-heatstrip-axis"
-            style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
-          >
-            {series.map((_, i) => (
-              <span key={i} className="iso-heatstrip-tick">{cfg.labels(i)}</span>
-            ))}
+        ) : (
+          <div className="iso-heatgrid">
+            <div className="iso-heatstrip-label">By {cfg.unit}</div>
+            <div
+              className="iso-heatstrip"
+              style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
+            >
+              {series.map((v, i) => (
+                <span
+                  key={i}
+                  className="iso-heatcell"
+                  style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
+                  title={`${cfg.labels(i) || `#${i + 1}`}: ${Math.round(v)}`}
+                />
+              ))}
+            </div>
+            <div
+              className="iso-heatstrip-axis"
+              style={{ gridTemplateColumns: `repeat(${cfg.count}, 1fr)` } as CSSProperties}
+            >
+              {series.map((_, i) => (
+                <span key={i} className="iso-heatstrip-tick">{cfg.labels(i)}</span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="iso-heatlegend">
           <span className="iso-heatlegend-label">Less</span>

@@ -54,16 +54,41 @@ function seedDemo() {
   demoSeeded = true;
   const now = Date.now();
   const out: FloorEvent[] = [];
-  // ~80 events spread over the last 50 minutes
-  for (let i = 0; i < 80; i++) {
-    const epoch = now - Math.floor(Math.random() * 50 * 60 * 1000);
-    const sensor = pickWeighted();
-    out.push({
-      ts: new Date(epoch).toISOString(),
-      epoch,
-      sensor,
-      value: 200 + Math.floor(Math.random() * 800),
-    });
+  const DAY = 86400000;
+  // Spread synthetic events across the last ~3 years so Day/Week/Month/Quarter/Year/All
+  // tabs all look lived-in. Each day has its own activity profile (weekday vs weekend,
+  // month-of-year seasonality, hour-of-day rush peaks).
+  const daysBack = 365 * 3;
+  for (let d = 0; d < daysBack; d++) {
+    const dayStart = now - d * DAY;
+    const date = new Date(dayStart);
+    const dow = date.getDay(); // 0 Sun .. 6 Sat
+    const month = date.getMonth();
+    // Seasonal multiplier — busier in Nov/Dec, quieter in Jan/Feb
+    const season = 1 + 0.35 * Math.sin(((month + 9) / 12) * Math.PI * 2);
+    // Weekend boost
+    const weekend = dow === 0 || dow === 6 ? 1.45 : 1;
+    // Decay older days slightly so recent windows feel denser
+    const recency = d < 7 ? 1.6 : d < 30 ? 1.25 : d < 90 ? 1 : 0.7;
+    const baseEvents = Math.floor((6 + Math.random() * 10) * season * weekend * recency);
+    for (let i = 0; i < baseEvents; i++) {
+      // Hour distribution: peaks ~12pm and ~6pm
+      const r = Math.random();
+      let hour: number;
+      if (r < 0.4) hour = 11 + Math.floor(Math.random() * 3);
+      else if (r < 0.75) hour = 17 + Math.floor(Math.random() * 3);
+      else hour = Math.floor(Math.random() * 24);
+      const minute = Math.floor(Math.random() * 60);
+      const second = Math.floor(Math.random() * 60);
+      const epoch = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second).getTime();
+      if (epoch > now) continue;
+      out.push({
+        ts: new Date(epoch).toISOString(),
+        epoch,
+        sensor: pickWeighted(),
+        value: 200 + Math.floor(Math.random() * 800),
+      });
+    }
   }
   demoStore = out.sort((a, b) => a.epoch - b.epoch);
 }
