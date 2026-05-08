@@ -457,26 +457,18 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
               }}
               title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""}`}
             >
-              <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.9 }} />
-              {showLabel && (
-                <span className="text-[10px] font-medium truncate px-1 ml-1" style={{ color: "var(--text)" }}>
-                  {el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name}
-                </span>
-              )}
-              {el.type === "tile" && (el.w >= 1 && el.h >= 1) && el.tileNumber != null && !showLabel && (
+              <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
+                <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.9 }} />
                 <span
-                  className="absolute font-mono"
+                  className="font-medium truncate max-w-full leading-none"
                   style={{
-                    bottom: 1,
-                    right: 2,
-                    fontSize: 8,
-                    color: "var(--acc)",
-                    lineHeight: 1,
+                    fontSize: Math.max(7, Math.min(10, minDim * 4 + 6)),
+                    color: "var(--text)",
                   }}
                 >
-                  {el.tileNumber}
+                  {labelText}
                 </span>
-              )}
+              </div>
 
               {/* Resize handles (only when selected & not a tile) */}
               {isSelected && !readOnly && el.type !== "tile" && (
