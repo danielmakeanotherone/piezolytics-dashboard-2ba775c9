@@ -178,7 +178,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
     setDrag({ kind: "move", id: el.id, offX: f.x - el.x, offY: f.y - el.y });
   };
 
-  const startResize = (e: React.MouseEvent, el: OutlineElement, handle: DragMode extends { kind: "resize"; handle: infer H } ? H : never) => {
+  const startResize = (e: React.MouseEvent, el: OutlineElement, handle: Handle) => {
     if (readOnly || tool) return;
     e.preventDefault();
     e.stopPropagation();
