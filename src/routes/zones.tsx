@@ -21,7 +21,7 @@ function ZonesPage() {
       <NavBar conn={conn} lastUpdate={lastUpdate} onRefresh={refresh} onClear={clearAll} />
       <main className="max-w-[1400px] mx-auto px-6 py-8">
         <h1 className="font-display text-text mb-6" style={{ fontSize: 28, fontWeight: 600 }}>
-          Zones
+          Tile Manager
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {ZONE_ORDER.map((z) => {
