@@ -63,6 +63,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
   const hourly = bucketSparkline(events, 36);
   const connected = conn === "live" || conn === "demo";
   const displayName = (() => {
+    if (demo) return "Daniel Fung";
     const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
     const raw = meta?.full_name || meta?.name || user?.email?.split("@")[0] || "";
     return raw ? raw.replace(/\b\w/g, (c) => c.toUpperCase()) : "";
