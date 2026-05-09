@@ -6,8 +6,6 @@ import { useUserTiles } from "@/hooks/use-user-tiles";
 import { useRoomLayout } from "@/hooks/use-room-layout";
 import { ZONE_ORDER } from "@/lib/floor-data";
 import {
-  OUTLINE_COLS,
-  OUTLINE_ROWS,
   OUTLINE_DEFS,
   type OutlineElement,
 } from "@/components/OutlineBuilder";
