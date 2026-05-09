@@ -352,7 +352,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
       {/* Toolbar */}
       <div className="panel p-3 flex items-center gap-2 flex-wrap">
         <span className="text-text3 text-[11px] uppercase tracking-wider mr-1">Elements</span>
-        {OUTLINE_DEFS.map((d) => {
+        {toolbarDefs.map((d) => {
           const Icon = d.icon;
           const active = tool === d.type;
           return (
