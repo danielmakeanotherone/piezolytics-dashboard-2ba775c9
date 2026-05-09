@@ -308,29 +308,6 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           );
         })}
 
-        <div className="ml-auto flex items-center gap-2">
-          {elements.length > 0 && !readOnly && (
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-text2 hover:text-text"
-              style={{ border: "1px solid var(--bord2)" }}
-            >
-              <Trash2 size={13} /> Clear all
-            </button>
-          )}
-          {onSave && !readOnly && (
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-50"
-              style={{ background: "var(--acc)", color: "var(--bg)" }}
-            >
-              <Save size={13} /> {saving ? "Saving…" : "Save layout"}
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Tile picker */}
