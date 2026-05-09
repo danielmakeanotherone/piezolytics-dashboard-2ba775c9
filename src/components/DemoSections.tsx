@@ -2,7 +2,14 @@ import { type CSSProperties, useMemo, useState } from "react";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { OutlineBuilder, type OutlineElement as _OutlineElement } from "@/components/OutlineBuilder";
+import {
+  OutlineBuilder,
+  OUTLINE_COLS,
+  OUTLINE_ROWS,
+  OUTLINE_DEFS,
+  type OutlineElement as _OutlineElement,
+} from "@/components/OutlineBuilder";
+import { useDemoLayout } from "@/hooks/use-demo-layout";
 
 const DEMO_TILES = [
   { id: "1", tile_number: 1, label: "Front Entrance" },
