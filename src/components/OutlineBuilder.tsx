@@ -55,17 +55,17 @@ interface ElementDef {
 }
 
 export const OUTLINE_DEFS: ElementDef[] = [
-  { type: "wall",     label: "Wall",     icon: RectangleHorizontal, tint: 0.55, color: "#8a8f99" },
-  { type: "door",     label: "Door",     icon: DoorOpen,            tint: 0.45, color: "#c9a36b" },
-  { type: "aisle",    label: "Aisle",    icon: Columns3,            tint: 0.30, color: "#7fb6ff" },
-  { type: "checkout", label: "Checkout", icon: ShoppingCart,        tint: 0.40, color: "#f08a5d" },
-  { type: "shelving", label: "Shelving", icon: LayoutGrid,          tint: 0.32, color: "#b48ead" },
-  { type: "fridge",   label: "Fridge",   icon: Snowflake,           tint: 0.36, color: "#6fd0e4" },
-  { type: "fitting",  label: "Fitting",  icon: Armchair,            tint: 0.34, color: "#e8c66b" },
-  { type: "storage",  label: "Storage",  icon: Package,             tint: 0.30, color: "#a3b18a" },
-  { type: "room",     label: "Room",     icon: Home,                tint: 0.22, color: "#9aa5b1" },
-  { type: "custom",   label: "Custom",   icon: Box,                 tint: 0.34, color: "#d68fb3" },
-  { type: "tile",     label: "Tile",     icon: Cpu,                 tint: 0.55, color: "var(--acc)" },
+  { type: "wall", label: "Wall", icon: RectangleHorizontal, tint: 0.55, color: "#8a8f99" },
+  { type: "door", label: "Door", icon: DoorOpen, tint: 0.45, color: "#c9a36b" },
+  { type: "aisle", label: "Aisle", icon: Columns3, tint: 0.3, color: "#7fb6ff" },
+  { type: "checkout", label: "Checkout", icon: ShoppingCart, tint: 0.4, color: "#f08a5d" },
+  { type: "shelving", label: "Shelving", icon: LayoutGrid, tint: 0.32, color: "#b48ead" },
+  { type: "fridge", label: "Fridge", icon: Snowflake, tint: 0.36, color: "#6fd0e4" },
+  { type: "fitting", label: "Fitting", icon: Armchair, tint: 0.34, color: "#e8c66b" },
+  { type: "storage", label: "Storage", icon: Package, tint: 0.3, color: "#a3b18a" },
+  { type: "room", label: "Room", icon: Home, tint: 0.22, color: "#9aa5b1" },
+  { type: "custom", label: "Custom", icon: Box, tint: 0.34, color: "#d68fb3" },
+  { type: "tile", label: "Tile", icon: Cpu, tint: 0.55, color: "var(--acc)" },
 ];
 
 const elStyle = (def: ElementDef, selected = false): CSSProperties => ({
@@ -103,8 +103,30 @@ interface Props {
 
 type Handle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
 type DragMode =
-  | { kind: "move"; id: string; offX: number; offY: number }
-  | { kind: "resize"; id: string; handle: Handle; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
+  | {
+      kind: "move";
+      id: string;
+      offX: number;
+      offY: number;
+      startClientX: number;
+      startClientY: number;
+    }
+  | {
+      kind: "resize";
+      id: string;
+      handle: Handle;
+      startX: number;
+      startY: number;
+      startW: number;
+      startH: number;
+      anchorFx: number;
+      anchorFy: number;
+      startClientX: number;
+      startClientY: number;
+    };
+
+const MOVE_START_PX = 7;
+const RESIZE_START_PX = 3;
 
 export function OutlineBuilder({
   elements,
@@ -140,13 +162,17 @@ export function OutlineBuilder({
     const registeredNums = new Set(registeredTiles.map((t) => t.tile_number));
 
     let next: OutlineElement[] = elements
-      .filter((e) => !(e.type === "tile" && e.tileNumber != null && !registeredNums.has(e.tileNumber)))
+      .filter(
+        (e) => !(e.type === "tile" && e.tileNumber != null && !registeredNums.has(e.tileNumber)),
+      )
       .map((e) => {
         if (e.type === "tile" && e.tileNumber != null) {
           const reg = registeredTiles.find((t) => t.tile_number === e.tileNumber);
           if (reg) {
-            const newName = reg.label || `Tile ${e.tileNumber}`;
-            if (newName !== e.name) return { ...e, name: newName };
+            const defaultName = `Tile ${e.tileNumber}`;
+            const newName = reg.label || defaultName;
+            if ((!e.name || e.name === defaultName) && newName !== e.name)
+              return { ...e, name: newName };
           }
         }
         return e;
@@ -212,24 +238,33 @@ export function OutlineBuilder({
         );
       });
     if (!same) onChange(next);
-  }, [registeredTiles, elements, readOnly, onChange, missingCount]);
+  }, [registeredTiles, elements, readOnly, onChange, missingCount, OUTLINE_COLS, OUTLINE_ROWS]);
 
-  const mouseToFractional = useCallback((cx: number, cy: number) => {
-    const r = canvasRef.current?.getBoundingClientRect();
-    if (!r) return null;
-    const x = ((cx - r.left) / r.width) * OUTLINE_COLS;
-    const y = ((cy - r.top) / r.height) * OUTLINE_ROWS;
-    return { x: Math.max(0, Math.min(OUTLINE_COLS, x)), y: Math.max(0, Math.min(OUTLINE_ROWS, y)) };
-  }, []);
+  const mouseToFractional = useCallback(
+    (cx: number, cy: number) => {
+      const r = canvasRef.current?.getBoundingClientRect();
+      if (!r) return null;
+      const x = ((cx - r.left) / r.width) * OUTLINE_COLS;
+      const y = ((cy - r.top) / r.height) * OUTLINE_ROWS;
+      return {
+        x: Math.max(0, Math.min(OUTLINE_COLS, x)),
+        y: Math.max(0, Math.min(OUTLINE_ROWS, y)),
+      };
+    },
+    [OUTLINE_COLS, OUTLINE_ROWS],
+  );
 
-  const mouseToGrid = useCallback((cx: number, cy: number) => {
-    const f = mouseToFractional(cx, cy);
-    if (!f) return null;
-    return {
-      col: Math.max(0, Math.min(OUTLINE_COLS - 1, Math.floor(f.x))),
-      row: Math.max(0, Math.min(OUTLINE_ROWS - 1, Math.floor(f.y))),
-    };
-  }, [mouseToFractional]);
+  const mouseToGrid = useCallback(
+    (cx: number, cy: number) => {
+      const f = mouseToFractional(cx, cy);
+      if (!f) return null;
+      return {
+        col: Math.max(0, Math.min(OUTLINE_COLS - 1, Math.floor(f.x))),
+        row: Math.max(0, Math.min(OUTLINE_ROWS - 1, Math.floor(f.y))),
+      };
+    },
+    [mouseToFractional, OUTLINE_COLS, OUTLINE_ROWS],
+  );
 
   const overlap = (a: { x: number; y: number; w: number; h: number }, b: OutlineElement) =>
     a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -262,7 +297,14 @@ export function OutlineBuilder({
     setSelectedId(el.id);
     const f = mouseToFractional(e.clientX, e.clientY);
     if (!f) return;
-    setDrag({ kind: "move", id: el.id, offX: f.x - el.x, offY: f.y - el.y });
+    setDrag({
+      kind: "move",
+      id: el.id,
+      offX: f.x - el.x,
+      offY: f.y - el.y,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+    });
   };
 
   const startResize = (e: React.MouseEvent, el: OutlineElement, handle: Handle) => {
@@ -282,6 +324,8 @@ export function OutlineBuilder({
       startH: el.h,
       anchorFx: f.x,
       anchorFy: f.y,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
     });
   };
 
@@ -290,10 +334,18 @@ export function OutlineBuilder({
   const onChangeRef = useRef(onChange);
   const dragRef = useRef<DragMode | null>(drag);
   const canPlaceRef = useRef(canPlace);
-  useEffect(() => { elementsRef.current = elements; }, [elements]);
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-  useEffect(() => { dragRef.current = drag; }, [drag]);
-  useEffect(() => { canPlaceRef.current = canPlace; });
+  useEffect(() => {
+    elementsRef.current = elements;
+  }, [elements]);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  useEffect(() => {
+    dragRef.current = drag;
+  }, [drag]);
+  useEffect(() => {
+    canPlaceRef.current = canPlace;
+  });
 
   // Global drag handling — works even when the cursor leaves the canvas.
   useEffect(() => {
@@ -302,6 +354,10 @@ export function OutlineBuilder({
     const onMove = (e: MouseEvent) => {
       const d = dragRef.current;
       if (!d) return;
+      const dx = e.clientX - d.startClientX;
+      const dy = e.clientY - d.startClientY;
+      const distance = Math.hypot(dx, dy);
+      if (distance < (d.kind === "move" ? MOVE_START_PX : RESIZE_START_PX)) return;
       const f = mouseToFractional(e.clientX, e.clientY);
       if (!f) return;
       const els = elementsRef.current;
@@ -309,16 +365,14 @@ export function OutlineBuilder({
       if (!el) return;
 
       if (d.kind === "move") {
-        const nx = Math.max(0, Math.min(Math.round(f.x - d.offX), OUTLINE_COLS - el.w));
-        const ny = Math.max(0, Math.min(Math.round(f.y - d.offY), OUTLINE_ROWS - el.h));
+        const nx = Math.max(0, Math.min(Math.floor(f.x - d.offX + 0.35), OUTLINE_COLS - el.w));
+        const ny = Math.max(0, Math.min(Math.floor(f.y - d.offY + 0.35), OUTLINE_ROWS - el.h));
         if (nx === el.x && ny === el.y) return;
         if (!canPlaceRef.current(nx, ny, el.w, el.h, el.id)) return;
         onChangeRef.current(els.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny } : x)));
         return;
       }
 
-      // Resize — use ceil for grow-side edges (e/s) and floor for shrink-side (w/n)
-      // so dragging just past a grid line snaps outward immediately.
       const { handle, startX, startY, startW, startH } = d;
       let nx = startX;
       let ny = startY;
@@ -326,34 +380,37 @@ export function OutlineBuilder({
       let nh = startH;
       const right = startX + startW;
       const bottom = startY + startH;
+      const colDelta = Math.trunc(f.x - d.anchorFx);
+      const rowDelta = Math.trunc(f.y - d.anchorFy);
 
       if (handle.includes("e")) {
-        const newRight = Math.max(startX + 1, Math.min(OUTLINE_COLS, Math.ceil(f.x)));
-        nw = newRight - startX;
+        nw = Math.max(1, Math.min(OUTLINE_COLS - startX, startW + colDelta));
       }
       if (handle.includes("s")) {
-        const newBottom = Math.max(startY + 1, Math.min(OUTLINE_ROWS, Math.ceil(f.y)));
-        nh = newBottom - startY;
+        nh = Math.max(1, Math.min(OUTLINE_ROWS - startY, startH + rowDelta));
       }
       if (handle.includes("w")) {
-        const newLeft = Math.max(0, Math.min(right - 1, Math.floor(f.x)));
-        nx = newLeft;
+        nx = Math.max(0, Math.min(right - 1, startX + colDelta));
         nw = right - nx;
       }
       if (handle.includes("n")) {
-        const newTop = Math.max(0, Math.min(bottom - 1, Math.floor(f.y)));
-        ny = newTop;
+        ny = Math.max(0, Math.min(bottom - 1, startY + rowDelta));
         nh = bottom - ny;
       }
 
-      if (el.type === "tile") { nw = 1; nh = 1; }
+      if (el.type === "tile") {
+        nw = 1;
+        nh = 1;
+      }
 
       if (nx + nw > OUTLINE_COLS) nw = OUTLINE_COLS - nx;
       if (ny + nh > OUTLINE_ROWS) nh = OUTLINE_ROWS - ny;
       if (nw < 1 || nh < 1) return;
       if (nx === el.x && ny === el.y && nw === el.w && nh === el.h) return;
       if (!canPlaceRef.current(nx, ny, nw, nh, el.id)) return;
-      onChangeRef.current(els.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny, w: nw, h: nh } : x)));
+      onChangeRef.current(
+        els.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny, w: nw, h: nh } : x)),
+      );
     };
 
     const onUp = () => setDrag(null);
@@ -375,14 +432,17 @@ export function OutlineBuilder({
     }
   };
 
-  
-
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (readOnly) return;
     onChange(elements.filter((x) => x.id !== id));
     if (selectedId === id) setSelectedId(null);
+  };
+
+  const renameSelected = (name: string) => {
+    if (!selected || readOnly) return;
+    onChange(elements.map((x) => (x.id === selected.id ? { ...x, name } : x)));
   };
 
   const hoverPreview =
@@ -424,7 +484,6 @@ export function OutlineBuilder({
             </button>
           );
         })}
-
       </div>
 
       {/* Missing tile warning */}
@@ -454,7 +513,11 @@ export function OutlineBuilder({
           <span className="text-text3 text-[11px] uppercase tracking-wider">Selected</span>
           <span
             className="px-2 py-1 rounded-md text-xs font-mono"
-            style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+            style={{
+              background: "var(--surf2)",
+              border: "1px solid var(--bord2)",
+              color: "var(--text2)",
+            }}
           >
             {getDef(selected.type).label}
           </span>
@@ -462,13 +525,12 @@ export function OutlineBuilder({
             type="text"
             maxLength={40}
             value={selected.name}
-            disabled={selected.type === "tile"}
-            onChange={(e) => {
-              const v = e.target.value;
-              onChange(elements.map((x) => (x.id === selected.id ? { ...x, name: v } : x)));
-            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => renameSelected(e.target.value)}
             placeholder="Name this element"
-            className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-md text-sm bg-transparent disabled:opacity-60"
+            className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-md text-sm bg-transparent"
             style={{ border: "1px solid var(--bord2)", color: "var(--text)" }}
           />
           {selected.type !== "tile" && (
@@ -485,7 +547,7 @@ export function OutlineBuilder({
             </button>
           )}
           {selected.type === "tile" && (
-            <span className="text-text3 text-xs">Tile name comes from Tile Manager.</span>
+            <span className="text-text3 text-xs">Custom tile label for this outline.</span>
           )}
         </div>
       )}
@@ -553,7 +615,8 @@ export function OutlineBuilder({
           const isSelected = selectedId === el.id;
           const minDim = Math.min(el.w, el.h);
           const iconSize = Math.max(10, Math.min(16, minDim * 8 + 4));
-          const labelText = el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name;
+          const labelText =
+            el.type === "tile" && el.tileNumber != null ? `#${el.tileNumber}` : el.name;
           return (
             <div
               key={el.id}
@@ -567,7 +630,13 @@ export function OutlineBuilder({
                 height: `${(el.h / OUTLINE_ROWS) * 100}%`,
                 ...elStyle(def, isSelected),
                 borderRadius: 4,
-                cursor: readOnly ? "default" : tool ? "crosshair" : "grab",
+                cursor: readOnly
+                  ? "default"
+                  : tool
+                    ? "crosshair"
+                    : drag?.kind === "move" && drag.id === el.id
+                      ? "grabbing"
+                      : "grab",
                 zIndex: isSelected ? 10 : 1,
               }}
               title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""}`}
@@ -589,14 +658,37 @@ export function OutlineBuilder({
               {isSelected && !readOnly && el.type !== "tile" && (
                 <>
                   {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
-                    const pos: CSSProperties = { position: "absolute", width: 8, height: 8, background: "var(--acc)", border: "1px solid var(--bg)", borderRadius: 2 };
-                    const cur: Record<string, string> = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
-                    if (h.includes("n")) pos.top = -4;
-                    if (h.includes("s")) pos.bottom = -4;
-                    if (h.includes("w")) pos.left = -4;
-                    if (h.includes("e")) pos.right = -4;
-                    if (h === "n" || h === "s") { pos.left = "50%"; pos.transform = "translateX(-50%)"; }
-                    if (h === "e" || h === "w") { pos.top = "50%"; pos.transform = "translateY(-50%)"; }
+                    const pos: CSSProperties = {
+                      position: "absolute",
+                      width: 14,
+                      height: 14,
+                      background: "var(--acc)",
+                      border: "2px solid var(--bg)",
+                      borderRadius: 3,
+                      boxShadow: "0 2px 8px color-mix(in srgb, var(--bg) 45%, transparent)",
+                    };
+                    const cur: Record<string, string> = {
+                      nw: "nwse-resize",
+                      se: "nwse-resize",
+                      ne: "nesw-resize",
+                      sw: "nesw-resize",
+                      n: "ns-resize",
+                      s: "ns-resize",
+                      e: "ew-resize",
+                      w: "ew-resize",
+                    };
+                    if (h.includes("n")) pos.top = -7;
+                    if (h.includes("s")) pos.bottom = -7;
+                    if (h.includes("w")) pos.left = -7;
+                    if (h.includes("e")) pos.right = -7;
+                    if (h === "n" || h === "s") {
+                      pos.left = "50%";
+                      pos.transform = "translateX(-50%)";
+                    }
+                    if (h === "e" || h === "w") {
+                      pos.top = "50%";
+                      pos.transform = "translateY(-50%)";
+                    }
                     return (
                       <div
                         key={h}
@@ -613,7 +705,8 @@ export function OutlineBuilder({
       </div>
 
       <p className="text-text3 text-[11px]">
-        Click a tool, then a cell to drop a 1×1 box. Click an element to select, then drag handles to resize. Right-click to delete.
+        Click a tool, then a cell to drop a 1×1 box. Click an element to select, then drag handles
+        to resize. Right-click to delete.
       </p>
 
       {onSave && !readOnly && (
