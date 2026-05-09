@@ -48,30 +48,32 @@ interface ElementDef {
   type: OutlineElementType;
   label: string;
   icon: React.ElementType;
-  /** Theme-aligned tint strength 0-1 (mixed with --acc) */
+  /** Theme-aligned tint strength 0-1 (mixed with color) */
   tint: number;
+  /** Distinct accent color per element type */
+  color: string;
 }
 
 export const OUTLINE_DEFS: ElementDef[] = [
-  { type: "wall", label: "Wall", icon: RectangleHorizontal, tint: 0.55 },
-  { type: "door", label: "Door", icon: DoorOpen, tint: 0.4 },
-  { type: "aisle", label: "Aisle", icon: Columns3, tint: 0.18 },
-  { type: "checkout", label: "Checkout", icon: ShoppingCart, tint: 0.32 },
-  { type: "shelving", label: "Shelving", icon: LayoutGrid, tint: 0.22 },
-  { type: "fridge", label: "Fridge", icon: Snowflake, tint: 0.26 },
-  { type: "fitting", label: "Fitting", icon: Armchair, tint: 0.24 },
-  { type: "storage", label: "Storage", icon: Package, tint: 0.2 },
-  { type: "room", label: "Room", icon: Home, tint: 0.14 },
-  { type: "custom", label: "Custom", icon: Box, tint: 0.28 },
-  { type: "tile", label: "Tile", icon: Cpu, tint: 0.5 },
+  { type: "wall",     label: "Wall",     icon: RectangleHorizontal, tint: 0.55, color: "#8a8f99" },
+  { type: "door",     label: "Door",     icon: DoorOpen,            tint: 0.45, color: "#c9a36b" },
+  { type: "aisle",    label: "Aisle",    icon: Columns3,            tint: 0.30, color: "#7fb6ff" },
+  { type: "checkout", label: "Checkout", icon: ShoppingCart,        tint: 0.40, color: "#f08a5d" },
+  { type: "shelving", label: "Shelving", icon: LayoutGrid,          tint: 0.32, color: "#b48ead" },
+  { type: "fridge",   label: "Fridge",   icon: Snowflake,           tint: 0.36, color: "#6fd0e4" },
+  { type: "fitting",  label: "Fitting",  icon: Armchair,            tint: 0.34, color: "#e8c66b" },
+  { type: "storage",  label: "Storage",  icon: Package,             tint: 0.30, color: "#a3b18a" },
+  { type: "room",     label: "Room",     icon: Home,                tint: 0.22, color: "#9aa5b1" },
+  { type: "custom",   label: "Custom",   icon: Box,                 tint: 0.34, color: "#d68fb3" },
+  { type: "tile",     label: "Tile",     icon: Cpu,                 tint: 0.55, color: "var(--acc)" },
 ];
 
 const elStyle = (def: ElementDef, selected = false): CSSProperties => ({
-  background: `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`,
+  background: `color-mix(in srgb, ${def.color} ${def.tint * 100}%, var(--surf2))`,
   border: `1.5px solid ${
     selected
       ? "var(--acc)"
-      : `color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`
+      : `color-mix(in srgb, ${def.color} ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`
   }`,
   color: "var(--text)",
 });
