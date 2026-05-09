@@ -209,7 +209,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
         })}
       </div>
 
-      {centers.length === 4 && (
+      {renderCount === 4 && centers.length === 4 && (
         <svg className="iso-leader-svg" width={dims.w} height={dims.h}>
           {centers.map((c, i) => {
             if (statusOf(i) === "ghost") return null;
@@ -227,7 +227,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
           })}
         </svg>
       )}
-      {centers.length === 4 && ZONE_ORDER.map((zone, i) => {
+      {renderCount === 4 && centers.length === 4 && ZONE_ORDER.map((zone, i) => {
         if (statusOf(i) === "ghost") return null;
         const c = centers[i];
         const [dx, dy] = dirs[i];
