@@ -308,6 +308,10 @@ export function OutlineBuilder({
     const onMove = (e: MouseEvent) => {
       const d = dragRef.current;
       if (!d) return;
+      const dx = e.clientX - d.startClientX;
+      const dy = e.clientY - d.startClientY;
+      const distance = Math.hypot(dx, dy);
+      if (distance < (d.kind === "move" ? MOVE_START_PX : RESIZE_START_PX)) return;
       const f = mouseToFractional(e.clientX, e.clientY);
       if (!f) return;
       const els = elementsRef.current;
@@ -315,16 +319,14 @@ export function OutlineBuilder({
       if (!el) return;
 
       if (d.kind === "move") {
-        const nx = Math.max(0, Math.min(Math.round(f.x - d.offX), OUTLINE_COLS - el.w));
-        const ny = Math.max(0, Math.min(Math.round(f.y - d.offY), OUTLINE_ROWS - el.h));
+        const nx = Math.max(0, Math.min(Math.floor(f.x - d.offX + 0.35), OUTLINE_COLS - el.w));
+        const ny = Math.max(0, Math.min(Math.floor(f.y - d.offY + 0.35), OUTLINE_ROWS - el.h));
         if (nx === el.x && ny === el.y) return;
         if (!canPlaceRef.current(nx, ny, el.w, el.h, el.id)) return;
         onChangeRef.current(els.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny } : x)));
         return;
       }
 
-      // Resize — use ceil for grow-side edges (e/s) and floor for shrink-side (w/n)
-      // so dragging just past a grid line snaps outward immediately.
       const { handle, startX, startY, startW, startH } = d;
       let nx = startX;
       let ny = startY;
@@ -332,23 +334,21 @@ export function OutlineBuilder({
       let nh = startH;
       const right = startX + startW;
       const bottom = startY + startH;
+      const colDelta = Math.trunc(f.x - d.anchorFx);
+      const rowDelta = Math.trunc(f.y - d.anchorFy);
 
       if (handle.includes("e")) {
-        const newRight = Math.max(startX + 1, Math.min(OUTLINE_COLS, Math.ceil(f.x)));
-        nw = newRight - startX;
+        nw = Math.max(1, Math.min(OUTLINE_COLS - startX, startW + colDelta));
       }
       if (handle.includes("s")) {
-        const newBottom = Math.max(startY + 1, Math.min(OUTLINE_ROWS, Math.ceil(f.y)));
-        nh = newBottom - startY;
+        nh = Math.max(1, Math.min(OUTLINE_ROWS - startY, startH + rowDelta));
       }
       if (handle.includes("w")) {
-        const newLeft = Math.max(0, Math.min(right - 1, Math.floor(f.x)));
-        nx = newLeft;
+        nx = Math.max(0, Math.min(right - 1, startX + colDelta));
         nw = right - nx;
       }
       if (handle.includes("n")) {
-        const newTop = Math.max(0, Math.min(bottom - 1, Math.floor(f.y)));
-        ny = newTop;
+        ny = Math.max(0, Math.min(bottom - 1, startY + rowDelta));
         nh = bottom - ny;
       }
 
