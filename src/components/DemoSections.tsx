@@ -324,6 +324,39 @@ function renderOutlineBox(
   );
 }
 
+function renderHeatBlob(el: _OutlineElement, count: number, max: number) {
+  if (el.type !== "tile" || el.tileNumber == null || count <= 0) return null;
+  const t = count / max;
+  const radiusCells = 4 + t * 5;
+  const wPct = ((radiusCells * 2) / OUTLINE_COLS) * 100;
+  const hPct = ((radiusCells * 2) / OUTLINE_ROWS) * 100;
+  const cxPct = ((el.x + el.w / 2) / OUTLINE_COLS) * 100;
+  const cyPct = ((el.y + el.h / 2) / OUTLINE_ROWS) * 100;
+  const coreA = 0.7 + t * 0.2;
+  return (
+    <div
+      key={`blob_${el.id}`}
+      className="absolute pointer-events-none"
+      style={{
+        left: `calc(${cxPct}% - ${wPct / 2}%)`,
+        top: `calc(${cyPct}% - ${hPct / 2}%)`,
+        width: `${wPct}%`,
+        height: `${hPct}%`,
+        background: `radial-gradient(circle,
+          rgba(220, 30, 25, ${coreA}) 0%,
+          rgba(255, 90, 30, ${0.55 + t * 0.2}) 14%,
+          rgba(255, 170, 40, 0.45) 28%,
+          rgba(255, 230, 80, 0.35) 44%,
+          rgba(120, 220, 120, 0.28) 60%,
+          rgba(120, 220, 120, 0) 78%)`,
+        filter: "blur(10px)",
+        mixBlendMode: "screen",
+        zIndex: 3,
+      }}
+    />
+  );
+}
+
 export function DemoHeatMap() {
   const { events } = useFloorData(2000, { demo: true });
   const { elements } = useDemoLayout();
