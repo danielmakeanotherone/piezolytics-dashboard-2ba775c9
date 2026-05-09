@@ -391,6 +391,11 @@ export function OutlineBuilder({
     if (selectedId === id) setSelectedId(null);
   };
 
+  const renameSelected = (name: string) => {
+    if (!selected || readOnly) return;
+    onChange(elements.map((x) => (x.id === selected.id ? { ...x, name } : x)));
+  };
+
   const hoverPreview =
     hover && tool
       ? {
@@ -468,13 +473,12 @@ export function OutlineBuilder({
             type="text"
             maxLength={40}
             value={selected.name}
-            disabled={selected.type === "tile"}
-            onChange={(e) => {
-              const v = e.target.value;
-              onChange(elements.map((x) => (x.id === selected.id ? { ...x, name: v } : x)));
-            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => renameSelected(e.target.value)}
             placeholder="Name this element"
-            className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-md text-sm bg-transparent disabled:opacity-60"
+            className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-md text-sm bg-transparent"
             style={{ border: "1px solid var(--bord2)", color: "var(--text)" }}
           />
           {selected.type !== "tile" && (
@@ -490,9 +494,7 @@ export function OutlineBuilder({
               <Trash2 size={13} /> Delete
             </button>
           )}
-          {selected.type === "tile" && (
-            <span className="text-text3 text-xs">Tile name comes from Tile Manager.</span>
-          )}
+          {selected.type === "tile" && <span className="text-text3 text-xs">Custom tile label for this outline.</span>}
         </div>
       )}
 
