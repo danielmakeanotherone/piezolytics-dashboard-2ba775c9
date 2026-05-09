@@ -575,7 +575,7 @@ export function OutlineBuilder({
                 height: `${(el.h / OUTLINE_ROWS) * 100}%`,
                 ...elStyle(def, isSelected),
                 borderRadius: 4,
-                cursor: readOnly ? "default" : tool ? "crosshair" : "grab",
+                cursor: readOnly ? "default" : tool ? "crosshair" : drag?.kind === "move" && drag.id === el.id ? "grabbing" : "grab",
                 zIndex: isSelected ? 10 : 1,
               }}
               title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""}`}
@@ -597,12 +597,12 @@ export function OutlineBuilder({
               {isSelected && !readOnly && el.type !== "tile" && (
                 <>
                   {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
-                    const pos: CSSProperties = { position: "absolute", width: 8, height: 8, background: "var(--acc)", border: "1px solid var(--bg)", borderRadius: 2 };
+                    const pos: CSSProperties = { position: "absolute", width: 14, height: 14, background: "var(--acc)", border: "2px solid var(--bg)", borderRadius: 3, boxShadow: "0 2px 8px color-mix(in srgb, var(--bg) 45%, transparent)" };
                     const cur: Record<string, string> = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
-                    if (h.includes("n")) pos.top = -4;
-                    if (h.includes("s")) pos.bottom = -4;
-                    if (h.includes("w")) pos.left = -4;
-                    if (h.includes("e")) pos.right = -4;
+                    if (h.includes("n")) pos.top = -7;
+                    if (h.includes("s")) pos.bottom = -7;
+                    if (h.includes("w")) pos.left = -7;
+                    if (h.includes("e")) pos.right = -7;
                     if (h === "n" || h === "s") { pos.left = "50%"; pos.transform = "translateX(-50%)"; }
                     if (h === "e" || h === "w") { pos.top = "50%"; pos.transform = "translateY(-50%)"; }
                     return (
