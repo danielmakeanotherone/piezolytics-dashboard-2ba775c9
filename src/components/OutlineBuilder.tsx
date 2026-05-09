@@ -103,19 +103,97 @@ type DragMode =
 export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, saving, readOnly }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<OutlineElementType | null>(null);
-  const [pickTileNum, setPickTileNum] = useState<number | null>(null);
   const [hover, setHover] = useState<{ col: number; row: number } | null>(null);
   const [drag, setDrag] = useState<DragMode | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [missingCount, setMissingCount] = useState(0);
 
-  const placedTileNums = useMemo(
-    () => new Set(elements.filter((e) => e.type === "tile" && e.tileNumber != null).map((e) => e.tileNumber!)),
-    [elements],
-  );
+  // Toolbar excludes "tile" — tiles are added/removed only via Tile Manager.
+  const toolbarDefs = useMemo(() => OUTLINE_DEFS.filter((d) => d.type !== "tile"), []);
 
+  // Auto-sync placed tiles with the registered tile list.
+  // - Remove tiles whose number is no longer registered
+  // - Refresh labels from the registry
+  // - Auto-place any newly-registered tile in the first free cell
+  // - Track how many tiles couldn't fit so we can warn the user
   useEffect(() => {
-    if (tool !== "tile") setPickTileNum(null);
-  }, [tool]);
+    if (readOnly) return;
+    const registeredNums = new Set(registeredTiles.map((t) => t.tile_number));
+
+    let next: OutlineElement[] = elements
+      .filter((e) => !(e.type === "tile" && e.tileNumber != null && !registeredNums.has(e.tileNumber)))
+      .map((e) => {
+        if (e.type === "tile" && e.tileNumber != null) {
+          const reg = registeredTiles.find((t) => t.tile_number === e.tileNumber);
+          if (reg) {
+            const newName = reg.label || `Tile ${e.tileNumber}`;
+            if (newName !== e.name) return { ...e, name: newName };
+          }
+        }
+        return e;
+      });
+
+    const findFreeCell = (existing: OutlineElement[]) => {
+      for (let r = 0; r < OUTLINE_ROWS; r++) {
+        for (let c = 0; c < OUTLINE_COLS; c++) {
+          let blocked = false;
+          for (const el of existing) {
+            if (c >= el.x && c < el.x + el.w && r >= el.y && r < el.y + el.h) {
+              blocked = true;
+              break;
+            }
+          }
+          if (!blocked) return { c, r };
+        }
+      }
+      return null;
+    };
+
+    const placed = new Set(
+      next.filter((e) => e.type === "tile" && e.tileNumber != null).map((e) => e.tileNumber!),
+    );
+    let missing = 0;
+    for (const t of registeredTiles) {
+      if (placed.has(t.tile_number)) continue;
+      const cell = findFreeCell(next);
+      if (!cell) {
+        missing++;
+        continue;
+      }
+      next = [
+        ...next,
+        {
+          id: genId(),
+          type: "tile",
+          x: cell.c,
+          y: cell.r,
+          w: 1,
+          h: 1,
+          name: t.label || `Tile ${t.tile_number}`,
+          tileNumber: t.tile_number,
+        },
+      ];
+    }
+
+    if (missing !== missingCount) setMissingCount(missing);
+
+    const same =
+      next.length === elements.length &&
+      next.every((e, i) => {
+        const o = elements[i];
+        return (
+          o &&
+          o.id === e.id &&
+          o.x === e.x &&
+          o.y === e.y &&
+          o.w === e.w &&
+          o.h === e.h &&
+          o.name === e.name &&
+          o.tileNumber === e.tileNumber
+        );
+      });
+    if (!same) onChange(next);
+  }, [registeredTiles, elements, readOnly, onChange, missingCount]);
 
   const mouseToFractional = useCallback((cx: number, cy: number) => {
     const r = canvasRef.current?.getBoundingClientRect();
