@@ -13,6 +13,7 @@ import {
   Cpu,
   Trash2,
   Save,
+  AlertTriangle,
 } from "lucide-react";
 
 export const OUTLINE_COLS = 24;
