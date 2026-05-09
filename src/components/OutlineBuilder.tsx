@@ -289,9 +289,11 @@ export function OutlineBuilder({
   const elementsRef = useRef(elements);
   const onChangeRef = useRef(onChange);
   const dragRef = useRef<DragMode | null>(drag);
+  const canPlaceRef = useRef(canPlace);
   useEffect(() => { elementsRef.current = elements; }, [elements]);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   useEffect(() => { dragRef.current = drag; }, [drag]);
+  useEffect(() => { canPlaceRef.current = canPlace; });
 
   // Global drag handling — works even when the cursor leaves the canvas.
   useEffect(() => {
