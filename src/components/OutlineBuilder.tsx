@@ -308,29 +308,6 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           );
         })}
 
-        <div className="ml-auto flex items-center gap-2">
-          {elements.length > 0 && !readOnly && (
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-text2 hover:text-text"
-              style={{ border: "1px solid var(--bord2)" }}
-            >
-              <Trash2 size={13} /> Clear all
-            </button>
-          )}
-          {onSave && !readOnly && (
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-50"
-              style={{ background: "var(--acc)", color: "var(--bg)" }}
-            >
-              <Save size={13} /> {saving ? "Saving…" : "Save layout"}
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Tile picker */}
@@ -500,6 +477,22 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
       <p className="text-text3 text-[11px]">
         Click a tool, then a cell to drop a 1×1 box. Click an element to select, then drag handles to resize. Right-click to delete.
       </p>
+
+      {onSave && !readOnly && (
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-lg text-base font-semibold transition-opacity disabled:opacity-50 mt-2"
+          style={{
+            background: "var(--acc)",
+            color: "var(--bg)",
+            boxShadow: "0 4px 18px -6px color-mix(in srgb, var(--acc) 50%, transparent)",
+          }}
+        >
+          <Save size={18} /> {saving ? "Saving…" : "Save layout"}
+        </button>
+      )}
     </div>
   );
 }
