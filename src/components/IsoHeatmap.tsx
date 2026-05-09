@@ -10,9 +10,11 @@ interface Props {
   tileNumbers?: number[];
   tileLabels?: string[];
   tileStatuses?: TileStatus[];
+  tileCount?: number;
 }
 
-export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels, tileStatuses }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels, tileStatuses, tileCount }: Props) {
+  const count = Math.max(1, tileCount ?? tileStatuses?.length ?? tileNumbers?.length ?? 4);
   const tileNum = (i: number) => tileNumbers?.[i] ?? i + 1;
   const tileLabel = (i: number) => tileLabels?.[i] ?? `Tile ${tileNum(i)}`;
   const statusOf = (i: number): TileStatus => tileStatuses?.[i] ?? "active";
