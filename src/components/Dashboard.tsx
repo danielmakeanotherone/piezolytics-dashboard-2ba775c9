@@ -133,7 +133,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
               <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} tileLabels={tileLabels} />
+              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} tileLabels={tileLabels} tileStatuses={[...tileStatuses]} />
             </div>
           </section>
 
