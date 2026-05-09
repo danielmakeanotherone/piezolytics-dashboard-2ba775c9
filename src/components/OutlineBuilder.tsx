@@ -93,6 +93,10 @@ interface Props {
   onSave?: () => void;
   saving?: boolean;
   readOnly?: boolean;
+  /** Grid columns (default OUTLINE_COLS = 24) */
+  cols?: number;
+  /** Grid rows (default OUTLINE_ROWS = 16) */
+  rows?: number;
 }
 
 type Handle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
@@ -100,7 +104,20 @@ type DragMode =
   | { kind: "move"; id: string; offX: number; offY: number }
   | { kind: "resize"; id: string; handle: Handle; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
 
-export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, saving, readOnly }: Props) {
+export function OutlineBuilder({
+  elements,
+  onChange,
+  registeredTiles,
+  onSave,
+  saving,
+  readOnly,
+  cols: colsProp,
+  rows: rowsProp,
+}: Props) {
+  // Use prop dimensions if provided; fall back to module defaults.
+  const OUTLINE_COLS = colsProp ?? 24;
+  const OUTLINE_ROWS = rowsProp ?? 16;
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<OutlineElementType | null>(null);
   const [hover, setHover] = useState<{ col: number; row: number } | null>(null);
