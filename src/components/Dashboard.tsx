@@ -67,6 +67,12 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
   const tileLabels = demo
     ? demoLabels
     : ZONE_ORDER.map((_, i) => tiles[i]?.label || `Tile ${tiles[i]?.tile_number ?? i + 1}`);
+  const tileStatuses = demo
+    ? (["active", "active", "active", "active"] as const)
+    : ZONE_ORDER.map((z, i) => {
+        if (!tiles[i]) return "ghost" as const;
+        return stats.counts[z] > 0 ? ("active" as const) : ("waiting" as const);
+      });
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
   const hourly = bucketSparkline(events, 36);
