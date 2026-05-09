@@ -248,6 +248,7 @@ function HeatMapPage() {
                 ))}
               </div>
               {elements.map(renderEl)}
+              {elements.map(renderHeatBlob)}
             </div>
 
             {/* Legend */}
