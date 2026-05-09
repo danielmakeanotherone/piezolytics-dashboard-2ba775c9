@@ -378,41 +378,24 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
 
       </div>
 
-      {/* Tile picker */}
-      {tool === "tile" && (
-        <div className="panel p-3">
-          <div className="text-text3 text-[11px] uppercase tracking-wider mb-2">
-            Pick a registered tile to place
-          </div>
-          {registeredTiles.length === 0 ? (
-            <div className="text-text3 text-sm">No tiles registered. Add some in Tile Manager first.</div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {registeredTiles.map((t) => {
-                const placed = placedTileNums.has(t.tile_number);
-                const active = pickTileNum === t.tile_number;
-                return (
-                  <button
-                    key={t.tile_number}
-                    type="button"
-                    disabled={placed}
-                    onClick={() => setPickTileNum(active ? null : t.tile_number)}
-                    className="px-2.5 py-1.5 rounded-md text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: active ? "color-mix(in srgb, var(--acc) 25%, var(--surf2))" : "var(--surf2)",
-                      border: `1px solid ${active ? "var(--acc)" : "var(--bord2)"}`,
-                      color: active ? "var(--acc)" : "var(--text2)",
-                    }}
-                    title={placed ? "Already placed" : ""}
-                  >
-                    <span className="font-mono">#{t.tile_number}</span>
-                    <span className="mx-1.5 text-text3">·</span>
-                    {t.label || "Unlabeled"}
-                  </button>
-                );
-              })}
+      {/* Missing tile warning */}
+      {missingCount > 0 && (
+        <div
+          className="panel p-3 flex items-center gap-3"
+          style={{
+            border: "1px solid color-mix(in srgb, #e0a96d 60%, var(--bord2))",
+            background: "color-mix(in srgb, #e0a96d 14%, var(--surf2))",
+          }}
+        >
+          <AlertTriangle size={18} style={{ color: "#e0a96d" }} />
+          <div className="flex-1">
+            <div className="text-text text-sm font-medium">
+              Missing {missingCount} {missingCount === 1 ? "tile" : "tiles"}, update outline
             </div>
-          )}
+            <div className="text-text3 text-xs mt-0.5">
+              Move or remove other elements so every registered tile has a 1×1 cell to live in.
+            </div>
+          </div>
         </div>
       )}
 
