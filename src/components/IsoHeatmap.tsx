@@ -101,11 +101,11 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
             <div className="iso-ghost-top" />
           </div>
         ))}
-        {ZONE_ORDER.map((zone, index) => {
-          const count = stats.counts[zone];
+        {Array.from({ length: renderCount }).map((_, index) => {
+          const zone = ZONE_ORDER[index] as SensorKey | undefined;
+          const count = zone ? stats.counts[zone] ?? 0 : 0;
           const norm = count / maxCount;
           const height = activeHeights[index];
-          const activePos: Array<[number, number]> = [[activeA,activeA],[activeB,activeA],[activeA,activeB],[activeB,activeB]];
           const [gc, gr] = activePos[index];
           const status = statusOf(index);
 
