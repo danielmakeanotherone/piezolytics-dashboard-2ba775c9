@@ -285,24 +285,41 @@ export function OutlineBuilder({
     });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (drag) {
+  // Keep refs in sync so the global window listeners always see the latest state.
+  const elementsRef = useRef(elements);
+  const onChangeRef = useRef(onChange);
+  const dragRef = useRef<DragMode | null>(drag);
+  const canPlaceRef = useRef(canPlace);
+  useEffect(() => { elementsRef.current = elements; }, [elements]);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { dragRef.current = drag; }, [drag]);
+  useEffect(() => { canPlaceRef.current = canPlace; });
+
+  // Global drag handling — works even when the cursor leaves the canvas.
+  useEffect(() => {
+    if (!drag) return;
+
+    const onMove = (e: MouseEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
       const f = mouseToFractional(e.clientX, e.clientY);
       if (!f) return;
-      const el = elements.find((x) => x.id === drag.id);
+      const els = elementsRef.current;
+      const el = els.find((x) => x.id === d.id);
       if (!el) return;
 
-      if (drag.kind === "move") {
-        const nx = Math.max(0, Math.min(Math.round(f.x - drag.offX), OUTLINE_COLS - el.w));
-        const ny = Math.max(0, Math.min(Math.round(f.y - drag.offY), OUTLINE_ROWS - el.h));
+      if (d.kind === "move") {
+        const nx = Math.max(0, Math.min(Math.round(f.x - d.offX), OUTLINE_COLS - el.w));
+        const ny = Math.max(0, Math.min(Math.round(f.y - d.offY), OUTLINE_ROWS - el.h));
         if (nx === el.x && ny === el.y) return;
-        if (!canPlace(nx, ny, el.w, el.h, el.id)) return;
-        onChange(elements.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny } : x)));
+        if (!canPlaceRef.current(nx, ny, el.w, el.h, el.id)) return;
+        onChangeRef.current(els.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny } : x)));
         return;
       }
 
-      // resize
-      const { handle, startX, startY, startW, startH } = drag;
+      // Resize — use ceil for grow-side edges (e/s) and floor for shrink-side (w/n)
+      // so dragging just past a grid line snaps outward immediately.
+      const { handle, startX, startY, startW, startH } = d;
       let nx = startX;
       let ny = startY;
       let nw = startW;
@@ -310,42 +327,55 @@ export function OutlineBuilder({
       const right = startX + startW;
       const bottom = startY + startH;
 
-      if (handle.includes("e")) nw = Math.max(1, Math.round(f.x) - startX);
-      if (handle.includes("s")) nh = Math.max(1, Math.round(f.y) - startY);
+      if (handle.includes("e")) {
+        const newRight = Math.max(startX + 1, Math.min(OUTLINE_COLS, Math.ceil(f.x)));
+        nw = newRight - startX;
+      }
+      if (handle.includes("s")) {
+        const newBottom = Math.max(startY + 1, Math.min(OUTLINE_ROWS, Math.ceil(f.y)));
+        nh = newBottom - startY;
+      }
       if (handle.includes("w")) {
-        const newX = Math.min(right - 1, Math.round(f.x));
-        nx = Math.max(0, newX);
+        const newLeft = Math.max(0, Math.min(right - 1, Math.floor(f.x)));
+        nx = newLeft;
         nw = right - nx;
       }
       if (handle.includes("n")) {
-        const newY = Math.min(bottom - 1, Math.round(f.y));
-        ny = Math.max(0, newY);
+        const newTop = Math.max(0, Math.min(bottom - 1, Math.floor(f.y)));
+        ny = newTop;
         nh = bottom - ny;
       }
 
-      // Tiles stay 1x1
-      if (el.type === "tile") {
-        nw = 1;
-        nh = 1;
-      }
+      if (el.type === "tile") { nw = 1; nh = 1; }
 
-      // Bounds
       if (nx + nw > OUTLINE_COLS) nw = OUTLINE_COLS - nx;
       if (ny + nh > OUTLINE_ROWS) nh = OUTLINE_ROWS - ny;
       if (nw < 1 || nh < 1) return;
-
       if (nx === el.x && ny === el.y && nw === el.w && nh === el.h) return;
-      if (!canPlace(nx, ny, nw, nh, el.id)) return;
-      onChange(elements.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny, w: nw, h: nh } : x)));
-      return;
-    }
+      if (!canPlaceRef.current(nx, ny, nw, nh, el.id)) return;
+      onChangeRef.current(els.map((x) => (x.id === el.id ? { ...x, x: nx, y: ny, w: nw, h: nh } : x)));
+    };
+
+    const onUp = () => setDrag(null);
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [drag, mouseToFractional, OUTLINE_COLS, OUTLINE_ROWS]);
+
+  // Hover-only handler for tool placement preview (drag is handled globally above).
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (drag) return;
     if (tool) {
       const g = mouseToGrid(e.clientX, e.clientY);
       if (g) setHover(g);
     }
   };
 
-  const handleMouseUp = () => setDrag(null);
+  
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -471,11 +501,7 @@ export function OutlineBuilder({
           cursor: tool ? "crosshair" : "default",
         }}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          setHover(null);
-          handleMouseUp();
-        }}
+        onMouseLeave={() => setHover(null)}
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) setSelectedId(null);
         }}
