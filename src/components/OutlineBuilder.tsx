@@ -501,11 +501,7 @@ export function OutlineBuilder({
           cursor: tool ? "crosshair" : "default",
         }}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          setHover(null);
-          handleMouseUp();
-        }}
+        onMouseLeave={() => setHover(null)}
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) setSelectedId(null);
         }}
