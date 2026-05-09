@@ -139,7 +139,7 @@ function HeatMapPage() {
     if (c <= 0) return null;
     const t = c / maxCount;
     // Bloom radius (in cells): scales with intensity. Base 4 cells → up to 9.
-    const radiusCells = 4 + t * 5;
+    const radiusCells = 1.8 + t * 1.6;
     const wPct = ((radiusCells * 2) / OUTLINE_COLS) * 100;
     const hPct = ((radiusCells * 2) / OUTLINE_ROWS) * 100;
     const cxPct = ((el.x + el.w / 2) / OUTLINE_COLS) * 100;
