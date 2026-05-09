@@ -298,8 +298,8 @@ function renderOutlineBox(
         height: `${(el.h / OUTLINE_ROWS) * 100}%`,
         background: bg,
         border,
-        borderRadius: 4,
-        zIndex: 1,
+      borderRadius: 4,
+        zIndex: 2,
       }}
       title={isTile ? `Tile #${el.tileNumber}${visit != null ? ` · ${visit} visits` : ""}` : el.name}
     >
