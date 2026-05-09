@@ -13,6 +13,7 @@ import {
   Cpu,
   Trash2,
   Save,
+  AlertTriangle,
 } from "lucide-react";
 
 export const OUTLINE_COLS = 24;
@@ -102,19 +103,97 @@ type DragMode =
 export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, saving, readOnly }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<OutlineElementType | null>(null);
-  const [pickTileNum, setPickTileNum] = useState<number | null>(null);
   const [hover, setHover] = useState<{ col: number; row: number } | null>(null);
   const [drag, setDrag] = useState<DragMode | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [missingCount, setMissingCount] = useState(0);
 
-  const placedTileNums = useMemo(
-    () => new Set(elements.filter((e) => e.type === "tile" && e.tileNumber != null).map((e) => e.tileNumber!)),
-    [elements],
-  );
+  // Toolbar excludes "tile" — tiles are added/removed only via Tile Manager.
+  const toolbarDefs = useMemo(() => OUTLINE_DEFS.filter((d) => d.type !== "tile"), []);
 
+  // Auto-sync placed tiles with the registered tile list.
+  // - Remove tiles whose number is no longer registered
+  // - Refresh labels from the registry
+  // - Auto-place any newly-registered tile in the first free cell
+  // - Track how many tiles couldn't fit so we can warn the user
   useEffect(() => {
-    if (tool !== "tile") setPickTileNum(null);
-  }, [tool]);
+    if (readOnly) return;
+    const registeredNums = new Set(registeredTiles.map((t) => t.tile_number));
+
+    let next: OutlineElement[] = elements
+      .filter((e) => !(e.type === "tile" && e.tileNumber != null && !registeredNums.has(e.tileNumber)))
+      .map((e) => {
+        if (e.type === "tile" && e.tileNumber != null) {
+          const reg = registeredTiles.find((t) => t.tile_number === e.tileNumber);
+          if (reg) {
+            const newName = reg.label || `Tile ${e.tileNumber}`;
+            if (newName !== e.name) return { ...e, name: newName };
+          }
+        }
+        return e;
+      });
+
+    const findFreeCell = (existing: OutlineElement[]) => {
+      for (let r = 0; r < OUTLINE_ROWS; r++) {
+        for (let c = 0; c < OUTLINE_COLS; c++) {
+          let blocked = false;
+          for (const el of existing) {
+            if (c >= el.x && c < el.x + el.w && r >= el.y && r < el.y + el.h) {
+              blocked = true;
+              break;
+            }
+          }
+          if (!blocked) return { c, r };
+        }
+      }
+      return null;
+    };
+
+    const placed = new Set(
+      next.filter((e) => e.type === "tile" && e.tileNumber != null).map((e) => e.tileNumber!),
+    );
+    let missing = 0;
+    for (const t of registeredTiles) {
+      if (placed.has(t.tile_number)) continue;
+      const cell = findFreeCell(next);
+      if (!cell) {
+        missing++;
+        continue;
+      }
+      next = [
+        ...next,
+        {
+          id: genId(),
+          type: "tile",
+          x: cell.c,
+          y: cell.r,
+          w: 1,
+          h: 1,
+          name: t.label || `Tile ${t.tile_number}`,
+          tileNumber: t.tile_number,
+        },
+      ];
+    }
+
+    if (missing !== missingCount) setMissingCount(missing);
+
+    const same =
+      next.length === elements.length &&
+      next.every((e, i) => {
+        const o = elements[i];
+        return (
+          o &&
+          o.id === e.id &&
+          o.x === e.x &&
+          o.y === e.y &&
+          o.w === e.w &&
+          o.h === e.h &&
+          o.name === e.name &&
+          o.tileNumber === e.tileNumber
+        );
+      });
+    if (!same) onChange(next);
+  }, [registeredTiles, elements, readOnly, onChange, missingCount]);
 
   const mouseToFractional = useCallback((cx: number, cy: number) => {
     const r = canvasRef.current?.getBoundingClientRect();
@@ -146,19 +225,8 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
   };
 
   const handleCellClick = (col: number, row: number) => {
-    if (readOnly || !tool) return;
+    if (readOnly || !tool || tool === "tile") return;
     if (!canPlace(col, row, 1, 1)) return;
-    if (tool === "tile") {
-      if (pickTileNum == null || placedTileNums.has(pickTileNum)) return;
-      const reg = registeredTiles.find((t) => t.tile_number === pickTileNum);
-      onChange([
-        ...elements,
-        { id: genId(), type: "tile", x: col, y: row, w: 1, h: 1, name: reg?.label || `Tile ${pickTileNum}`, tileNumber: pickTileNum },
-      ]);
-      setPickTileNum(null);
-      setTool(null);
-      return;
-    }
     const def = getDef(tool);
     const count = elements.filter((e) => e.type === tool).length + 1;
     onChange([
@@ -284,7 +352,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
       {/* Toolbar */}
       <div className="panel p-3 flex items-center gap-2 flex-wrap">
         <span className="text-text3 text-[11px] uppercase tracking-wider mr-1">Elements</span>
-        {OUTLINE_DEFS.map((d) => {
+        {toolbarDefs.map((d) => {
           const Icon = d.icon;
           const active = tool === d.type;
           return (
@@ -310,41 +378,24 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
 
       </div>
 
-      {/* Tile picker */}
-      {tool === "tile" && (
-        <div className="panel p-3">
-          <div className="text-text3 text-[11px] uppercase tracking-wider mb-2">
-            Pick a registered tile to place
-          </div>
-          {registeredTiles.length === 0 ? (
-            <div className="text-text3 text-sm">No tiles registered. Add some in Tile Manager first.</div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {registeredTiles.map((t) => {
-                const placed = placedTileNums.has(t.tile_number);
-                const active = pickTileNum === t.tile_number;
-                return (
-                  <button
-                    key={t.tile_number}
-                    type="button"
-                    disabled={placed}
-                    onClick={() => setPickTileNum(active ? null : t.tile_number)}
-                    className="px-2.5 py-1.5 rounded-md text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: active ? "color-mix(in srgb, var(--acc) 25%, var(--surf2))" : "var(--surf2)",
-                      border: `1px solid ${active ? "var(--acc)" : "var(--bord2)"}`,
-                      color: active ? "var(--acc)" : "var(--text2)",
-                    }}
-                    title={placed ? "Already placed" : ""}
-                  >
-                    <span className="font-mono">#{t.tile_number}</span>
-                    <span className="mx-1.5 text-text3">·</span>
-                    {t.label || "Unlabeled"}
-                  </button>
-                );
-              })}
+      {/* Missing tile warning */}
+      {missingCount > 0 && (
+        <div
+          className="panel p-3 flex items-center gap-3"
+          style={{
+            border: "1px solid color-mix(in srgb, #e0a96d 60%, var(--bord2))",
+            background: "color-mix(in srgb, #e0a96d 14%, var(--surf2))",
+          }}
+        >
+          <AlertTriangle size={18} style={{ color: "#e0a96d" }} />
+          <div className="flex-1">
+            <div className="text-text text-sm font-medium">
+              Missing {missingCount} {missingCount === 1 ? "tile" : "tiles"}, update outline
             </div>
-          )}
+            <div className="text-text3 text-xs mt-0.5">
+              Move or remove other elements so every registered tile has a 1×1 cell to live in.
+            </div>
+          </div>
         </div>
       )}
 
@@ -356,7 +407,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           aspectRatio: `${OUTLINE_COLS}/${OUTLINE_ROWS}`,
           background: "var(--surf)",
           border: "1px solid var(--bord2)",
-          cursor: tool ? (tool === "tile" && pickTileNum == null ? "not-allowed" : "crosshair") : "default",
+          cursor: tool ? "crosshair" : "default",
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
