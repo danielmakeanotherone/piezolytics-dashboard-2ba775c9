@@ -103,8 +103,11 @@ interface Props {
 
 type Handle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
 type DragMode =
-  | { kind: "move"; id: string; offX: number; offY: number }
-  | { kind: "resize"; id: string; handle: Handle; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
+  | { kind: "move"; id: string; offX: number; offY: number; startClientX: number; startClientY: number }
+  | { kind: "resize"; id: string; handle: Handle; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number; startClientX: number; startClientY: number };
+
+const MOVE_START_PX = 7;
+const RESIZE_START_PX = 3;
 
 export function OutlineBuilder({
   elements,
@@ -145,8 +148,9 @@ export function OutlineBuilder({
         if (e.type === "tile" && e.tileNumber != null) {
           const reg = registeredTiles.find((t) => t.tile_number === e.tileNumber);
           if (reg) {
-            const newName = reg.label || `Tile ${e.tileNumber}`;
-            if (newName !== e.name) return { ...e, name: newName };
+            const defaultName = `Tile ${e.tileNumber}`;
+            const newName = reg.label || defaultName;
+            if ((!e.name || e.name === defaultName) && newName !== e.name) return { ...e, name: newName };
           }
         }
         return e;
@@ -220,7 +224,7 @@ export function OutlineBuilder({
     const x = ((cx - r.left) / r.width) * OUTLINE_COLS;
     const y = ((cy - r.top) / r.height) * OUTLINE_ROWS;
     return { x: Math.max(0, Math.min(OUTLINE_COLS, x)), y: Math.max(0, Math.min(OUTLINE_ROWS, y)) };
-  }, []);
+  }, [OUTLINE_COLS, OUTLINE_ROWS]);
 
   const mouseToGrid = useCallback((cx: number, cy: number) => {
     const f = mouseToFractional(cx, cy);
@@ -262,7 +266,7 @@ export function OutlineBuilder({
     setSelectedId(el.id);
     const f = mouseToFractional(e.clientX, e.clientY);
     if (!f) return;
-    setDrag({ kind: "move", id: el.id, offX: f.x - el.x, offY: f.y - el.y });
+    setDrag({ kind: "move", id: el.id, offX: f.x - el.x, offY: f.y - el.y, startClientX: e.clientX, startClientY: e.clientY });
   };
 
   const startResize = (e: React.MouseEvent, el: OutlineElement, handle: Handle) => {
@@ -282,6 +286,8 @@ export function OutlineBuilder({
       startH: el.h,
       anchorFx: f.x,
       anchorFy: f.y,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
     });
   };
 
