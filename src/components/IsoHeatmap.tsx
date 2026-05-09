@@ -10,9 +10,11 @@ interface Props {
   tileNumbers?: number[];
   tileLabels?: string[];
   tileStatuses?: TileStatus[];
+  tileCount?: number;
 }
 
-export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels, tileStatuses }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels, tileStatuses, tileCount }: Props) {
+  const renderCount = Math.max(1, tileCount ?? tileStatuses?.length ?? tileNumbers?.length ?? 4);
   const tileNum = (i: number) => tileNumbers?.[i] ?? i + 1;
   const tileLabel = (i: number) => tileLabels?.[i] ?? `Tile ${tileNum(i)}`;
   const statusOf = (i: number): TileStatus => tileStatuses?.[i] ?? "active";
@@ -30,23 +32,31 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
     return () => ro.disconnect();
   }, []);
   const maxCount = Math.max(1, stats.maxCount);
-  const activeHeights = ZONE_ORDER.map((zone) => {
-    const count = stats.counts[zone];
-    const norm = count / maxCount;
+  const activeHeights = Array.from({ length: renderCount }, (_, i) => {
+    const zone = ZONE_ORDER[i] as SensorKey | undefined;
+    const c = zone ? stats.counts[zone] ?? 0 : 0;
+    const norm = c / maxCount;
     return 34 + norm * 104;
   });
-  const ghostPlaneHeight = Math.max(...activeHeights);
+  const ghostPlaneHeight = activeHeights.length ? Math.max(...activeHeights) : 80;
 
-  // Ghost tile positions (column, row) in an NxN surrounding grid.
-  // Active 2x2 occupies the center: cols/rows N/2 and N/2+1.
-  const N = 8;
-  const activeA = N / 2;
-  const activeB = N / 2 + 1;
+  // Dynamically size the active center block to fit `renderCount` tiles.
+  const side = Math.max(2, Math.ceil(Math.sqrt(renderCount)));
+  const N = Math.max(8, side + 4);
+  // Active block centered: cols/rows [aStart .. aStart+side-1]
+  const aStart = Math.floor((N - side) / 2) + 1;
+  const activePos: Array<[number, number]> = [];
+  for (let r = 0; r < side; r++) {
+    for (let c = 0; c < side; c++) {
+      activePos.push([aStart + c, aStart + r]);
+    }
+  }
+  const activeKey = (gc: number, gr: number) => `${gc}|${gr}`;
+  const occupied = new Set(activePos.slice(0, renderCount).map(([c, r]) => activeKey(c, r)));
   const ghostCells: Array<[number, number]> = [];
   for (let r = 1; r <= N; r++) {
     for (let c = 1; c <= N; c++) {
-      const isActive = (c === activeA || c === activeB) && (r === activeA || r === activeB);
-      if (!isActive) ghostCells.push([c, r]);
+      if (!occupied.has(activeKey(c, r))) ghostCells.push([c, r]);
     }
   }
 
@@ -91,11 +101,11 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
             <div className="iso-ghost-top" />
           </div>
         ))}
-        {ZONE_ORDER.map((zone, index) => {
-          const count = stats.counts[zone];
+        {Array.from({ length: renderCount }).map((_, index) => {
+          const zone = ZONE_ORDER[index] as SensorKey | undefined;
+          const count = zone ? stats.counts[zone] ?? 0 : 0;
           const norm = count / maxCount;
           const height = activeHeights[index];
-          const activePos: Array<[number, number]> = [[activeA,activeA],[activeB,activeA],[activeA,activeB],[activeB,activeB]];
           const [gc, gr] = activePos[index];
           const status = statusOf(index);
 
@@ -115,7 +125,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
           const isWaiting = status === "waiting";
           return (
             <div
-              key={zone}
+              key={zone ?? `tile-${index}`}
               ref={(el) => { realRefs.current[index] = el; }}
               className={isWaiting ? "iso-block iso-block-real iso-block-waiting" : "iso-block iso-block-real"}
               role="button"
@@ -199,7 +209,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
         })}
       </div>
 
-      {centers.length === 4 && (
+      {renderCount === 4 && centers.length === 4 && (
         <svg className="iso-leader-svg" width={dims.w} height={dims.h}>
           {centers.map((c, i) => {
             if (statusOf(i) === "ghost") return null;
@@ -217,7 +227,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
           })}
         </svg>
       )}
-      {centers.length === 4 && ZONE_ORDER.map((zone, i) => {
+      {renderCount === 4 && centers.length === 4 && ZONE_ORDER.map((zone, i) => {
         if (statusOf(i) === "ghost") return null;
         const c = centers[i];
         const [dx, dy] = dirs[i];
@@ -247,7 +257,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
           index={selected}
           tileNumber={tileNum(selected)}
           tileLabel={tileLabel(selected)}
-          zone={ZONE_ORDER[selected]}
+          zone={(ZONE_ORDER[selected] ?? ZONE_ORDER[0]) as SensorKey}
           stats={stats}
           events={events}
           onClose={() => setSelected(null)}

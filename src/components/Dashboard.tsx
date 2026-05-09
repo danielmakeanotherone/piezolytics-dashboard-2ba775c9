@@ -61,17 +61,19 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
   const { user } = useAuthSession();
   const { tiles } = useUserTiles();
   const demoLabels = ["Front Entrance", "Aisle A", "Checkout", "Aisle B"];
+  const tileCount = demo ? 4 : Math.max(tiles.length, 1);
   const tileNumbers = demo
     ? [1, 2, 3, 4]
-    : ZONE_ORDER.map((_, i) => tiles[i]?.tile_number ?? i + 1);
+    : Array.from({ length: tileCount }, (_, i) => tiles[i]?.tile_number ?? i + 1);
   const tileLabels = demo
     ? demoLabels
-    : ZONE_ORDER.map((_, i) => tiles[i]?.label || `Tile ${tiles[i]?.tile_number ?? i + 1}`);
-  const tileStatuses = demo
-    ? (["active", "active", "active", "active"] as const)
-    : ZONE_ORDER.map((z, i) => {
-        if (!tiles[i]) return "ghost" as const;
-        return stats.counts[z] > 0 ? ("active" as const) : ("waiting" as const);
+    : Array.from({ length: tileCount }, (_, i) => tiles[i]?.label || `Tile ${tiles[i]?.tile_number ?? i + 1}`);
+  const tileStatuses: Array<"ghost" | "waiting" | "active"> = demo
+    ? ["active", "active", "active", "active"]
+    : Array.from({ length: tileCount }, (_, i) => {
+        if (!tiles[i]) return "ghost";
+        const z = ZONE_ORDER[i];
+        return z && stats.counts[z] > 0 ? "active" : "waiting";
       });
   const [timeLabels, setTimeLabels] = useState({ today: "Today", clock: "--:--" });
   const spark = bucketSparkline(events, 28);
@@ -133,7 +135,7 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
               <span>{timeLabels.clock}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} tileLabels={tileLabels} tileStatuses={[...tileStatuses]} />
+              <IsoHeatmap stats={stats} events={events} connected={connected} tileNumbers={tileNumbers} tileLabels={tileLabels} tileStatuses={tileStatuses} tileCount={tileCount} />
             </div>
           </section>
 
