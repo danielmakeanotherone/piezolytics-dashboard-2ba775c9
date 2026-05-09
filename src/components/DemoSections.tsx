@@ -2,7 +2,14 @@ import { type CSSProperties, useMemo, useState } from "react";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { OutlineBuilder, type OutlineElement as _OutlineElement } from "@/components/OutlineBuilder";
+import {
+  OutlineBuilder,
+  OUTLINE_COLS,
+  OUTLINE_ROWS,
+  OUTLINE_DEFS,
+  type OutlineElement as _OutlineElement,
+} from "@/components/OutlineBuilder";
+import { useDemoLayout } from "@/hooks/use-demo-layout";
 
 const DEMO_TILES = [
   { id: "1", tile_number: 1, label: "Front Entrance" },
@@ -240,33 +247,120 @@ function FBtn({
   );
 }
 
+// Heat color scale: pale yellow → orange → red.
+function heatRGB(t: number): [number, number, number] {
+  const stops: { p: number; c: [number, number, number] }[] = [
+    { p: 0.0, c: [255, 235, 130] },
+    { p: 0.5, c: [255, 150, 50] },
+    { p: 1.0, c: [220, 30, 25] },
+  ];
+  const tt = Math.max(0, Math.min(1, t));
+  let a = stops[0], b = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (tt >= stops[i].p && tt <= stops[i + 1].p) { a = stops[i]; b = stops[i + 1]; break; }
+  }
+  const k = (tt - a.p) / Math.max(0.0001, (b.p - a.p));
+  return [
+    Math.round(a.c[0] + (b.c[0] - a.c[0]) * k),
+    Math.round(a.c[1] + (b.c[1] - a.c[1]) * k),
+    Math.round(a.c[2] + (b.c[2] - a.c[2]) * k),
+  ];
+}
+
+function renderOutlineBox(
+  el: _OutlineElement,
+  opts: { heat?: { count: number; max: number } } = {},
+) {
+  const def = OUTLINE_DEFS.find((d) => d.type === el.type)!;
+  const Icon = def.icon;
+  const minDim = Math.min(el.w, el.h);
+  const iconSize = Math.max(10, Math.min(16, minDim * 8 + 4));
+  const fontSize = Math.max(7, Math.min(10, minDim * 4 + 6));
+  const isTile = el.type === "tile" && el.tileNumber != null;
+
+  let bg: string;
+  let border: string;
+  let iconColor = "var(--acc)";
+  let textColor = "var(--text)";
+
+  if (isTile && opts.heat) {
+    const { count, max } = opts.heat;
+    if (count <= 0) {
+      bg = "color-mix(in srgb, var(--text3) 12%, var(--surf2))";
+      border = "1.5px solid color-mix(in srgb, var(--bord2) 80%, transparent)";
+      iconColor = "var(--text3)";
+      textColor = "var(--text2)";
+    } else {
+      const [r, g, b] = heatRGB(count / max);
+      bg = `rgb(${r}, ${g}, ${b})`;
+      border = `1.5px solid rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 1)`;
+      iconColor = "rgba(0,0,0,0.85)";
+      textColor = "rgba(0,0,0,0.9)";
+    }
+  } else {
+    bg = `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`;
+    border = `1.5px solid color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`;
+  }
+
+  const labelText = isTile ? `#${el.tileNumber}` : el.name;
+  const visit = isTile && opts.heat ? opts.heat.count : null;
+
+  return (
+    <div
+      key={el.id}
+      className="absolute flex items-center justify-center"
+      style={{
+        left: `${(el.x / OUTLINE_COLS) * 100}%`,
+        top: `${(el.y / OUTLINE_ROWS) * 100}%`,
+        width: `${(el.w / OUTLINE_COLS) * 100}%`,
+        height: `${(el.h / OUTLINE_ROWS) * 100}%`,
+        background: bg,
+        border,
+        borderRadius: 4,
+        zIndex: 1,
+      }}
+      title={isTile ? `Tile #${el.tileNumber}${visit != null ? ` · ${visit} visits` : ""}` : el.name}
+    >
+      <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
+        <Icon size={iconSize} style={{ color: iconColor, opacity: 0.95 }} />
+        <span
+          className="font-medium truncate max-w-full leading-none"
+          style={{ fontSize, color: textColor }}
+        >
+          {labelText}
+        </span>
+        {visit != null && visit > 0 && (
+          <span
+            className="font-mono leading-none"
+            style={{ fontSize: Math.max(6, fontSize - 2), color: textColor, opacity: 0.85 }}
+          >
+            {visit}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function DemoHeatMap() {
   const { events } = useFloorData(2000, { demo: true });
-  const tagged = useMemo(
-    () =>
-      events.map((e) => {
-        const idx = ZONE_ORDER.indexOf(e.sensor);
-        return { ...e, tileNumber: idx >= 0 ? idx + 1 : -1 };
-      }),
-    [events],
-  );
+  const { elements } = useDemoLayout();
 
-  // Week buckets per demo tile
-  const cfgCount = 7;
-  const labels = (i: number) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i];
-  const matrix = useMemo(() => {
-    const now = new Date();
-    return DEMO_TILES.map((t) => {
-      const buckets = new Array<number>(cfgCount).fill(0);
-      for (const e of tagged.filter((x) => x.tileNumber === t.tile_number)) {
-        const d = new Date(e.epoch);
-        const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-        if (diffDays >= 0 && diffDays < 7) buckets[6 - diffDays]++;
-      }
-      return { tile: t, buckets };
-    });
-  }, [tagged]);
-  const heatMax = Math.max(1, ...matrix.flatMap((r) => r.buckets));
+  const counts = useMemo(() => {
+    const week = Date.now() - 7 * 86400000;
+    const map = new Map<number, number>();
+    for (const e of events) {
+      if (e.epoch < week) continue;
+      const idx = ZONE_ORDER.indexOf(e.sensor);
+      const tn = idx >= 0 ? idx + 1 : -1;
+      if (tn < 0) continue;
+      map.set(tn, (map.get(tn) ?? 0) + 1);
+    }
+    return map;
+  }, [events]);
+
+  const tileEls = elements.filter((e) => e.type === "tile" && e.tileNumber != null);
+  const maxCount = Math.max(1, ...tileEls.map((e) => counts.get(e.tileNumber!) ?? 0));
 
   return (
     <section className="max-w-[1400px] mx-auto px-6 pt-4 pb-12">
@@ -276,88 +370,91 @@ export function DemoHeatMap() {
             Heat Map <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
           </h2>
           <p className="text-text3 text-sm mt-1">
-            Activity intensity across each tile over the past week.
+            Same layout you build in the Outline tab — sensor tiles colored by visits over the past week.
           </p>
         </div>
       </div>
-      <div className="panel p-6">
-        <div className="flex flex-col gap-2">
-          {matrix.map(({ tile, buckets }) => (
-            <div key={tile.id} className="grid items-center gap-3" style={{ gridTemplateColumns: "180px 1fr 64px" }}>
-              <div className="min-w-0">
-                <div className="text-text text-sm truncate">{tile.label}</div>
-                <div className="font-mono text-text3 text-[11px]">tile_{tile.tile_number}</div>
-              </div>
-              <div className="iso-heatstrip" style={{ gridTemplateColumns: `repeat(${cfgCount}, 1fr)` } as CSSProperties}>
-                {buckets.map((v, i) => (
-                  <span
-                    key={i}
-                    className="iso-heatcell iso-heatcell-red"
-                    style={{ "--t": (v / heatMax).toFixed(3) } as CSSProperties}
-                    title={`${labels(i)}: ${v}`}
-                  />
-                ))}
-              </div>
-              <div className="text-right font-mono text-text2 text-[12px]">
-                {buckets.reduce((s, v) => s + v, 0)}
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="panel p-4">
         <div
-          className="iso-heatstrip-axis mt-3"
-          style={{ gridTemplateColumns: `repeat(${cfgCount}, 1fr)`, marginLeft: 192, marginRight: 76 } as CSSProperties}
+          className="relative rounded-lg overflow-hidden"
+          style={{
+            aspectRatio: `${OUTLINE_COLS}/${OUTLINE_ROWS}`,
+            background: "var(--surf)",
+            border: "1px solid var(--bord2)",
+          }}
         >
-          {Array.from({ length: cfgCount }).map((_, i) => (
-            <span key={i} className="iso-heatstrip-tick">{labels(i)}</span>
-          ))}
-        </div>
-        <div className="iso-heatlegend mt-4">
-          <span className="iso-heatlegend-label">Less</span>
-          <span className="iso-heatlegend-scale">
-            {[0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => (
-              <span key={t} className="iso-heatcell iso-heatcell-red iso-heatlegend-cell" style={{ "--t": t.toFixed(2) } as CSSProperties} />
+          <div
+            className="absolute inset-0 grid"
+            style={{
+              gridTemplateColumns: `repeat(${OUTLINE_COLS}, 1fr)`,
+              gridTemplateRows: `repeat(${OUTLINE_ROWS}, 1fr)`,
+              zIndex: 0,
+            }}
+          >
+            {Array.from({ length: OUTLINE_ROWS * OUTLINE_COLS }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  borderRight: "1px solid color-mix(in srgb, var(--bord2) 40%, transparent)",
+                  borderBottom: "1px solid color-mix(in srgb, var(--bord2) 40%, transparent)",
+                }}
+              />
             ))}
-          </span>
-          <span className="iso-heatlegend-label">More events</span>
+          </div>
+          {elements.map((el) =>
+            renderOutlineBox(el, {
+              heat:
+                el.type === "tile" && el.tileNumber != null
+                  ? { count: counts.get(el.tileNumber) ?? 0, max: maxCount }
+                  : undefined,
+            }),
+          )}
+        </div>
+        <div className="flex items-center gap-3 mt-4">
+          <span className="text-text3 text-xs">Less</span>
+          <div className="flex-1 h-3 rounded-full overflow-hidden flex">
+            {Array.from({ length: 40 }).map((_, i) => {
+              const [r, g, b] = heatRGB(i / 39);
+              return <span key={i} style={{ flex: 1, background: `rgb(${r},${g},${b})` } as CSSProperties} />;
+            })}
+          </div>
+          <span className="text-text3 text-xs">More visits</span>
+          <span className="text-text3 text-xs font-mono ml-2">peak {maxCount}</span>
         </div>
       </div>
     </section>
   );
 }
 
-
-const DEMO_OUTLINE: _OutlineElement[] = [
-  { id: "d1", type: "wall", x: 0, y: 0, w: 24, h: 1, name: "Wall N" },
-  { id: "d2", type: "wall", x: 0, y: 15, w: 24, h: 1, name: "Wall S" },
-  { id: "d3", type: "wall", x: 0, y: 1, w: 1, h: 14, name: "Wall W" },
-  { id: "d4", type: "wall", x: 23, y: 1, w: 1, h: 14, name: "Wall E" },
-  { id: "d5", type: "door", x: 11, y: 15, w: 2, h: 1, name: "Front Door" },
-  { id: "d6", type: "shelving", x: 4, y: 3, w: 1, h: 4, name: "Shelf A" },
-  { id: "d7", type: "shelving", x: 8, y: 3, w: 1, h: 4, name: "Shelf B" },
-  { id: "d8", type: "checkout", x: 18, y: 11, w: 2, h: 2, name: "Checkout" },
-  { id: "d9", type: "tile", x: 11, y: 13, w: 1, h: 1, name: "Front Entrance", tileNumber: 1 },
-  { id: "d10", type: "tile", x: 6, y: 5, w: 1, h: 1, name: "Aisle A", tileNumber: 2 },
-  { id: "d11", type: "tile", x: 18, y: 13, w: 1, h: 1, name: "Checkout", tileNumber: 3 },
-  { id: "d12", type: "tile", x: 14, y: 5, w: 1, h: 1, name: "Aisle B", tileNumber: 4 },
-];
-
 export function DemoOutline() {
-  const [els, setEls] = useState<_OutlineElement[]>(DEMO_OUTLINE);
+  const { elements, setElements, save } = useDemoLayout();
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  const handleSave = () => {
+    save();
+    setSavedAt(Date.now());
+  };
+
   return (
     <section className="max-w-[1400px] mx-auto px-6 pt-4 pb-2">
-      <div className="mb-4">
-        <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
-          Outline Builder <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
-        </h2>
-        <p className="text-text3 text-sm mt-1">
-          Sketch your room layout and place each registered tile where it lives on the floor.
-        </p>
+      <div className="mb-4 flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="font-display text-text" style={{ fontSize: 22, fontWeight: 600 }}>
+            Outline Builder <span className="text-text3 text-xs uppercase tracking-wider ml-2">Preview</span>
+          </h2>
+          <p className="text-text3 text-sm mt-1">
+            Sketch your room layout and place each registered tile where it lives on the floor.
+          </p>
+        </div>
+        {savedAt && (
+          <div className="text-text3 text-xs">Saved · {new Date(savedAt).toLocaleTimeString()}</div>
+        )}
       </div>
       <OutlineBuilder
-        elements={els}
-        onChange={setEls}
+        elements={elements}
+        onChange={setElements}
         registeredTiles={DEMO_TILES.map((t) => ({ tile_number: t.tile_number, label: t.label }))}
+        onSave={handleSave}
       />
     </section>
   );
