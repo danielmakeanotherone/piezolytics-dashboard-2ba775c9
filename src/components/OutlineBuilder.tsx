@@ -375,7 +375,7 @@ export function OutlineBuilder({
     }
   };
 
-  const handleMouseUp = () => setDrag(null);
+  
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
