@@ -407,7 +407,7 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
           aspectRatio: `${OUTLINE_COLS}/${OUTLINE_ROWS}`,
           background: "var(--surf)",
           border: "1px solid var(--bord2)",
-          cursor: tool ? (tool === "tile" && pickTileNum == null ? "not-allowed" : "crosshair") : "default",
+          cursor: tool ? "crosshair" : "default",
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
