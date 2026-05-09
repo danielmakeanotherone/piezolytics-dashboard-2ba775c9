@@ -547,7 +547,7 @@ export function OutlineBuilder({
               title={`${el.name}${el.type === "tile" && el.tileNumber != null ? ` · tile_${el.tileNumber}` : ""}`}
             >
               <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
-                <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.9 }} />
+                <Icon size={iconSize} style={{ color: def.color, opacity: 0.95 }} />
                 <span
                   className="font-medium truncate max-w-full leading-none"
                   style={{
