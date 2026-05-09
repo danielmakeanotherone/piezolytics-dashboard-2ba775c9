@@ -125,7 +125,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
           const isWaiting = status === "waiting";
           return (
             <div
-              key={zone}
+              key={zone ?? `tile-${index}`}
               ref={(el) => { realRefs.current[index] = el; }}
               className={isWaiting ? "iso-block iso-block-real iso-block-waiting" : "iso-block iso-block-real"}
               role="button"
