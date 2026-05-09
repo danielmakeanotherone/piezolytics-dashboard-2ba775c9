@@ -416,13 +416,11 @@ export function DemoHeatMap() {
               />
             ))}
           </div>
+          {elements.map((el) => renderOutlineBox(el))}
           {elements.map((el) =>
-            renderOutlineBox(el, {
-              heat:
-                el.type === "tile" && el.tileNumber != null
-                  ? { count: counts.get(el.tileNumber) ?? 0, max: maxCount }
-                  : undefined,
-            }),
+            el.type === "tile" && el.tileNumber != null
+              ? renderHeatBlob(el, counts.get(el.tileNumber) ?? 0, maxCount)
+              : null,
           )}
         </div>
         <div className="flex items-center gap-3 mt-4">
