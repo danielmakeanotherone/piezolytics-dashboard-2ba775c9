@@ -1,17 +1,21 @@
 import { ZONE_ORDER, ZONE_LABELS, type Stats, type SensorKey, type FloorEvent } from "@/lib/floor-data";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
+type TileStatus = "ghost" | "waiting" | "active";
+
 interface Props {
   stats: Stats;
   events?: FloorEvent[];
   connected?: boolean;
   tileNumbers?: number[];
   tileLabels?: string[];
+  tileStatuses?: TileStatus[];
 }
 
-export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels }: Props) {
+export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, tileLabels, tileStatuses }: Props) {
   const tileNum = (i: number) => tileNumbers?.[i] ?? i + 1;
   const tileLabel = (i: number) => tileLabels?.[i] ?? `Tile ${tileNum(i)}`;
+  const statusOf = (i: number): TileStatus => tileStatuses?.[i] ?? "active";
   const [selected, setSelected] = useState<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
