@@ -225,19 +225,8 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
   };
 
   const handleCellClick = (col: number, row: number) => {
-    if (readOnly || !tool) return;
+    if (readOnly || !tool || tool === "tile") return;
     if (!canPlace(col, row, 1, 1)) return;
-    if (tool === "tile") {
-      if (pickTileNum == null || placedTileNums.has(pickTileNum)) return;
-      const reg = registeredTiles.find((t) => t.tile_number === pickTileNum);
-      onChange([
-        ...elements,
-        { id: genId(), type: "tile", x: col, y: row, w: 1, h: 1, name: reg?.label || `Tile ${pickTileNum}`, tileNumber: pickTileNum },
-      ]);
-      setPickTileNum(null);
-      setTool(null);
-      return;
-    }
     const def = getDef(tool);
     const count = elements.filter((e) => e.type === tool).length + 1;
     onChange([
