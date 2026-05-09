@@ -16,21 +16,50 @@ export const Route = createFileRoute("/outline")({
   component: OutlinePage,
 });
 
+const SIZE_PRESETS = [
+  { key: "small",  label: "Small",  cols: 16, rows: 10, blurb: "Café · single room" },
+  { key: "medium", label: "Medium", cols: 24, rows: 16, blurb: "Convenience store" },
+  { key: "large",  label: "Large",  cols: 32, rows: 22, blurb: "Supermarket · open floor" },
+] as const;
+
 function OutlinePage() {
   const { conn, lastUpdate, refresh, clearAll } = useFloorData();
   const { tiles, loading: tilesLoading } = useUserTiles();
-  const { elements: serverEls, loading: layoutLoading, saving, save } = useRoomLayout();
+  const {
+    elements: serverEls,
+    cols: serverCols,
+    rows: serverRows,
+    hasSavedLayout,
+    loading: layoutLoading,
+    saving,
+    save,
+  } = useRoomLayout();
   const [elements, setElements] = useState<OutlineElement[]>([]);
+  const [cols, setCols] = useState<number>(24);
+  const [rows, setRows] = useState<number>(16);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [picked, setPicked] = useState(false);
 
   useEffect(() => {
-    if (!layoutLoading) setElements(serverEls);
-  }, [serverEls, layoutLoading]);
+    if (layoutLoading) return;
+    setElements(serverEls);
+    setCols(serverCols);
+    setRows(serverRows);
+    if (hasSavedLayout) setPicked(true);
+  }, [serverEls, serverCols, serverRows, hasSavedLayout, layoutLoading]);
 
   const handleSave = async () => {
-    await save(elements);
+    await save(elements, cols, rows);
     setSavedAt(Date.now());
   };
+
+  const choose = (c: number, r: number) => {
+    setCols(c);
+    setRows(r);
+    setPicked(true);
+  };
+
+  const showPicker = !layoutLoading && !hasSavedLayout && !picked;
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -45,20 +74,59 @@ function OutlinePage() {
               Sketch your room and drop registered tiles where they sit on the floor.
             </p>
           </div>
-          {savedAt && (
-            <div className="text-text3 text-xs">
-              Saved · {new Date(savedAt).toLocaleTimeString()}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {!showPicker && (
+              <span className="text-text3 text-xs font-mono">
+                {cols} × {rows}
+              </span>
+            )}
+            {savedAt && (
+              <div className="text-text3 text-xs">
+                Saved · {new Date(savedAt).toLocaleTimeString()}
+              </div>
+            )}
+          </div>
         </div>
 
         {layoutLoading || tilesLoading ? (
           <div className="text-text3 text-sm">Loading…</div>
+        ) : showPicker ? (
+          <div className="panel p-6">
+            <div className="font-display text-text mb-1" style={{ fontSize: 18, fontWeight: 600 }}>
+              Pick a canvas size to start
+            </div>
+            <p className="text-text3 text-sm mb-5">
+              You can keep working on your layout afterwards — this just sets the grid you have to work with.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {SIZE_PRESETS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => choose(p.cols, p.rows)}
+                  className="text-left p-4 rounded-lg transition-colors hover:border-[var(--acc)]"
+                  style={{ background: "var(--surf2)", border: "1px solid var(--bord2)" }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-display text-text" style={{ fontSize: 16, fontWeight: 600 }}>
+                      {p.label}
+                    </span>
+                    <span className="text-text3 text-[11px] font-mono">
+                      {p.cols} × {p.rows}
+                    </span>
+                  </div>
+                  <div className="text-text3 text-xs">{p.blurb}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         ) : (
           <OutlineBuilder
             elements={elements}
             onChange={setElements}
             registeredTiles={tiles.map((t) => ({ tile_number: t.tile_number, label: t.label }))}
+            cols={cols}
+            rows={rows}
             onSave={handleSave}
             saving={saving}
           />

@@ -93,6 +93,10 @@ interface Props {
   onSave?: () => void;
   saving?: boolean;
   readOnly?: boolean;
+  /** Grid columns (default OUTLINE_COLS = 24) */
+  cols?: number;
+  /** Grid rows (default OUTLINE_ROWS = 16) */
+  rows?: number;
 }
 
 type Handle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
@@ -100,7 +104,20 @@ type DragMode =
   | { kind: "move"; id: string; offX: number; offY: number }
   | { kind: "resize"; id: string; handle: Handle; startX: number; startY: number; startW: number; startH: number; anchorFx: number; anchorFy: number };
 
-export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, saving, readOnly }: Props) {
+export function OutlineBuilder({
+  elements,
+  onChange,
+  registeredTiles,
+  onSave,
+  saving,
+  readOnly,
+  cols: colsProp,
+  rows: rowsProp,
+}: Props) {
+  // Use prop dimensions if provided; fall back to module defaults.
+  const OUTLINE_COLS = colsProp ?? 24;
+  const OUTLINE_ROWS = rowsProp ?? 16;
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<OutlineElementType | null>(null);
   const [hover, setHover] = useState<{ col: number; row: number } | null>(null);
@@ -396,6 +413,48 @@ export function OutlineBuilder({ elements, onChange, registeredTiles, onSave, sa
               Move or remove other elements so every registered tile has a 1×1 cell to live in.
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Selection panel — rename / delete */}
+      {selected && !readOnly && (
+        <div className="panel p-3 flex items-center gap-3 flex-wrap">
+          <span className="text-text3 text-[11px] uppercase tracking-wider">Selected</span>
+          <span
+            className="px-2 py-1 rounded-md text-xs font-mono"
+            style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+          >
+            {getDef(selected.type).label}
+          </span>
+          <input
+            type="text"
+            maxLength={40}
+            value={selected.name}
+            disabled={selected.type === "tile"}
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange(elements.map((x) => (x.id === selected.id ? { ...x, name: v } : x)));
+            }}
+            placeholder="Name this element"
+            className="flex-1 min-w-[160px] px-2.5 py-1.5 rounded-md text-sm bg-transparent disabled:opacity-60"
+            style={{ border: "1px solid var(--bord2)", color: "var(--text)" }}
+          />
+          {selected.type !== "tile" && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange(elements.filter((x) => x.id !== selected.id));
+                setSelectedId(null);
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs"
+              style={{ border: "1px solid var(--bord2)", color: "var(--text2)" }}
+            >
+              <Trash2 size={13} /> Delete
+            </button>
+          )}
+          {selected.type === "tile" && (
+            <span className="text-text3 text-xs">Tile name comes from Tile Manager.</span>
+          )}
         </div>
       )}
 
