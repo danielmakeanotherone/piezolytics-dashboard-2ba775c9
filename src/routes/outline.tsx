@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { NavBar } from "@/components/NavBar";
 import { OutlineBuilder, type OutlineElement } from "@/components/OutlineBuilder";
 import { useFloorData } from "@/hooks/use-floor-data";
@@ -49,8 +50,18 @@ function OutlinePage() {
   }, [serverEls, serverCols, serverRows, hasSavedLayout, layoutLoading]);
 
   const handleSave = async () => {
-    await save(elements, cols, rows);
-    setSavedAt(Date.now());
+    try {
+      await save(elements, cols, rows);
+      setSavedAt(Date.now());
+      const tileCount = elements.filter((e) => e.type === "tile").length;
+      toast.success("Layout saved", {
+        description: `${elements.length} element${elements.length === 1 ? "" : "s"} · ${tileCount} tile${tileCount === 1 ? "" : "s"} · ${cols} × ${rows}`,
+      });
+    } catch (err) {
+      toast.error("Could not save layout", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    }
   };
 
   const choose = (c: number, r: number) => {
