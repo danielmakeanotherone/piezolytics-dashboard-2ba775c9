@@ -88,33 +88,9 @@ function HeatMapPage() {
     const fontSize = Math.max(7, Math.min(10, minDim * 4 + 6));
     const isTile = el.type === "tile" && el.tileNumber != null;
 
-    let bg: string;
-    let border: string;
-    let iconColor = "var(--acc)";
-    let textColor: string = "var(--text)";
-
-    if (isTile) {
-      const c = counts.get(el.tileNumber!) ?? 0;
-      const t = c / maxCount;
-      if (c <= 0) {
-        // Cold / no visits — faint surface
-        bg = "color-mix(in srgb, var(--text3) 12%, var(--surf2))";
-        border = "1.5px solid color-mix(in srgb, var(--bord2) 80%, transparent)";
-        iconColor = "var(--text3)";
-        textColor = "var(--text2)";
-      } else {
-        const [r, g, b] = heatRGB(t);
-        bg = `rgb(${r}, ${g}, ${b})`;
-        border = `1.5px solid rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 1)`;
-        // Darken text for legibility on warm fills
-        iconColor = "rgba(0,0,0,0.85)";
-        textColor = "rgba(0,0,0,0.9)";
-      }
-    } else {
-      // Non-tile elements: use the same look as the Outline Builder.
-      bg = `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`;
-      border = `1.5px solid color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`;
-    }
+    // All elements use the same neutral outline-builder look — heat is overlaid separately.
+    const bg = `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`;
+    const border = `1.5px solid color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`;
 
     const labelText = isTile ? `#${el.tileNumber}` : el.name;
     const visitText = isTile ? (counts.get(el.tileNumber!) ?? 0) : null;
@@ -131,28 +107,65 @@ function HeatMapPage() {
           background: bg,
           border,
           borderRadius: 4,
-          zIndex: 1,
+          zIndex: 2,
         }}
         title={isTile ? `Tile #${el.tileNumber}: ${visitText} visits` : el.name}
       >
         <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
-          <Icon size={iconSize} style={{ color: iconColor, opacity: 0.95 }} />
+          <Icon size={iconSize} style={{ color: "var(--acc)", opacity: 0.95 }} />
           <span
             className="font-medium truncate max-w-full leading-none"
-            style={{ fontSize, color: textColor }}
+            style={{ fontSize, color: "var(--text)" }}
           >
             {labelText}
           </span>
           {isTile && visitText! > 0 && (
             <span
               className="font-mono leading-none"
-              style={{ fontSize: Math.max(6, fontSize - 2), color: textColor, opacity: 0.85 }}
+              style={{ fontSize: Math.max(6, fontSize - 2), color: "var(--text2)", opacity: 0.85 }}
             >
               {visitText}
             </span>
           )}
         </div>
       </div>
+    );
+  };
+
+  // Soft radial bloom centered on each tile — green outer halo → red center.
+  const renderHeatBlob = (el: OutlineElement) => {
+    if (el.type !== "tile" || el.tileNumber == null) return null;
+    const c = counts.get(el.tileNumber) ?? 0;
+    if (c <= 0) return null;
+    const t = c / maxCount;
+    // Bloom radius (in cells): scales with intensity. Base 4 cells → up to 9.
+    const radiusCells = 4 + t * 5;
+    const wPct = ((radiusCells * 2) / OUTLINE_COLS) * 100;
+    const hPct = ((radiusCells * 2) / OUTLINE_ROWS) * 100;
+    const cxPct = ((el.x + el.w / 2) / OUTLINE_COLS) * 100;
+    const cyPct = ((el.y + el.h / 2) / OUTLINE_ROWS) * 100;
+    const coreA = 0.7 + t * 0.2;
+    return (
+      <div
+        key={`blob_${el.id}`}
+        className="absolute pointer-events-none"
+        style={{
+          left: `calc(${cxPct}% - ${wPct / 2}%)`,
+          top: `calc(${cyPct}% - ${hPct / 2}%)`,
+          width: `${wPct}%`,
+          height: `${hPct}%`,
+          background: `radial-gradient(circle,
+            rgba(220, 30, 25, ${coreA}) 0%,
+            rgba(255, 90, 30, ${0.55 + t * 0.2}) 14%,
+            rgba(255, 170, 40, ${0.45}) 28%,
+            rgba(255, 230, 80, 0.35) 44%,
+            rgba(120, 220, 120, 0.28) 60%,
+            rgba(120, 220, 120, 0) 78%)`,
+          filter: "blur(10px)",
+          mixBlendMode: "screen",
+          zIndex: 3,
+        }}
+      />
     );
   };
 
@@ -235,6 +248,7 @@ function HeatMapPage() {
                 ))}
               </div>
               {elements.map(renderEl)}
+              {elements.map(renderHeatBlob)}
             </div>
 
             {/* Legend */}

@@ -278,29 +278,11 @@ function renderOutlineBox(
   const fontSize = Math.max(7, Math.min(10, minDim * 4 + 6));
   const isTile = el.type === "tile" && el.tileNumber != null;
 
-  let bg: string;
-  let border: string;
-  let iconColor = "var(--acc)";
-  let textColor = "var(--text)";
-
-  if (isTile && opts.heat) {
-    const { count, max } = opts.heat;
-    if (count <= 0) {
-      bg = "color-mix(in srgb, var(--text3) 12%, var(--surf2))";
-      border = "1.5px solid color-mix(in srgb, var(--bord2) 80%, transparent)";
-      iconColor = "var(--text3)";
-      textColor = "var(--text2)";
-    } else {
-      const [r, g, b] = heatRGB(count / max);
-      bg = `rgb(${r}, ${g}, ${b})`;
-      border = `1.5px solid rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 1)`;
-      iconColor = "rgba(0,0,0,0.85)";
-      textColor = "rgba(0,0,0,0.9)";
-    }
-  } else {
-    bg = `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`;
-    border = `1.5px solid color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`;
-  }
+  // Always neutral outline-builder look — heat is overlaid as a separate radial bloom.
+  const bg = `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`;
+  const border = `1.5px solid color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`;
+  const iconColor = "var(--acc)";
+  const textColor = "var(--text)";
 
   const labelText = isTile ? `#${el.tileNumber}` : el.name;
   const visit = isTile && opts.heat ? opts.heat.count : null;
@@ -316,8 +298,8 @@ function renderOutlineBox(
         height: `${(el.h / OUTLINE_ROWS) * 100}%`,
         background: bg,
         border,
-        borderRadius: 4,
-        zIndex: 1,
+      borderRadius: 4,
+        zIndex: 2,
       }}
       title={isTile ? `Tile #${el.tileNumber}${visit != null ? ` · ${visit} visits` : ""}` : el.name}
     >
@@ -339,6 +321,39 @@ function renderOutlineBox(
         )}
       </div>
     </div>
+  );
+}
+
+function renderHeatBlob(el: _OutlineElement, count: number, max: number) {
+  if (el.type !== "tile" || el.tileNumber == null || count <= 0) return null;
+  const t = count / max;
+  const radiusCells = 4 + t * 5;
+  const wPct = ((radiusCells * 2) / OUTLINE_COLS) * 100;
+  const hPct = ((radiusCells * 2) / OUTLINE_ROWS) * 100;
+  const cxPct = ((el.x + el.w / 2) / OUTLINE_COLS) * 100;
+  const cyPct = ((el.y + el.h / 2) / OUTLINE_ROWS) * 100;
+  const coreA = 0.7 + t * 0.2;
+  return (
+    <div
+      key={`blob_${el.id}`}
+      className="absolute pointer-events-none"
+      style={{
+        left: `calc(${cxPct}% - ${wPct / 2}%)`,
+        top: `calc(${cyPct}% - ${hPct / 2}%)`,
+        width: `${wPct}%`,
+        height: `${hPct}%`,
+        background: `radial-gradient(circle,
+          rgba(220, 30, 25, ${coreA}) 0%,
+          rgba(255, 90, 30, ${0.55 + t * 0.2}) 14%,
+          rgba(255, 170, 40, 0.45) 28%,
+          rgba(255, 230, 80, 0.35) 44%,
+          rgba(120, 220, 120, 0.28) 60%,
+          rgba(120, 220, 120, 0) 78%)`,
+        filter: "blur(10px)",
+        mixBlendMode: "screen",
+        zIndex: 3,
+      }}
+    />
   );
 }
 
@@ -401,13 +416,11 @@ export function DemoHeatMap() {
               />
             ))}
           </div>
+          {elements.map((el) => renderOutlineBox(el))}
           {elements.map((el) =>
-            renderOutlineBox(el, {
-              heat:
-                el.type === "tile" && el.tileNumber != null
-                  ? { count: counts.get(el.tileNumber) ?? 0, max: maxCount }
-                  : undefined,
-            }),
+            el.type === "tile" && el.tileNumber != null
+              ? renderHeatBlob(el, counts.get(el.tileNumber) ?? 0, maxCount)
+              : null,
           )}
         </div>
         <div className="flex items-center gap-3 mt-4">
