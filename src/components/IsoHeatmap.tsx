@@ -202,6 +202,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
       {centers.length === 4 && (
         <svg className="iso-leader-svg" width={dims.w} height={dims.h}>
           {centers.map((c, i) => {
+            if (statusOf(i) === "ghost") return null;
             const [dx, dy] = dirs[i];
             const len = Math.hypot(dx, dy);
             const ux = dx / len, uy = dy / len;
@@ -217,6 +218,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
         </svg>
       )}
       {centers.length === 4 && ZONE_ORDER.map((zone, i) => {
+        if (statusOf(i) === "ghost") return null;
         const c = centers[i];
         const [dx, dy] = dirs[i];
         const len = Math.hypot(dx, dy);
@@ -224,15 +226,16 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
         const tx = c.x + ux * LEADER;
         const ty = c.y + uy * LEADER;
         const side = ux < 0 ? "right" : "left";
+        const waiting = statusOf(i) === "waiting";
         return (
           <div
             key={`tag-${zone}`}
-            className="iso-tag iso-tag-leader"
+            className={waiting ? "iso-tag iso-tag-leader iso-tag-waiting" : "iso-tag iso-tag-leader"}
             data-side={side}
             style={{ left: tx, top: ty }}
           >
             <span className="iso-tag-label">{tileLabel(i)}</span>
-            <span className="iso-tag-count">{stats.counts[zone]}</span>
+            <span className="iso-tag-count">{waiting ? "—" : stats.counts[zone]}</span>
           </div>
         );
       })}
