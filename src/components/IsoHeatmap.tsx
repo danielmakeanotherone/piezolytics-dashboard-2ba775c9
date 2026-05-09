@@ -257,7 +257,7 @@ export function IsoHeatmap({ stats, events = [], connected = true, tileNumbers, 
           index={selected}
           tileNumber={tileNum(selected)}
           tileLabel={tileLabel(selected)}
-          zone={ZONE_ORDER[selected]}
+          zone={(ZONE_ORDER[selected] ?? ZONE_ORDER[0]) as SensorKey}
           stats={stats}
           events={events}
           onClose={() => setSelected(null)}
