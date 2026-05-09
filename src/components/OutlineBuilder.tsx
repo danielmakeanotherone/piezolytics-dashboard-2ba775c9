@@ -238,7 +238,7 @@ export function OutlineBuilder({
         );
       });
     if (!same) onChange(next);
-  }, [registeredTiles, elements, readOnly, onChange, missingCount]);
+  }, [registeredTiles, elements, readOnly, onChange, missingCount, OUTLINE_COLS, OUTLINE_ROWS]);
 
   const mouseToFractional = useCallback(
     (cx: number, cy: number) => {
@@ -263,7 +263,7 @@ export function OutlineBuilder({
         row: Math.max(0, Math.min(OUTLINE_ROWS - 1, Math.floor(f.y))),
       };
     },
-    [mouseToFractional],
+    [mouseToFractional, OUTLINE_COLS, OUTLINE_ROWS],
   );
 
   const overlap = (a: { x: number; y: number; w: number; h: number }, b: OutlineElement) =>
