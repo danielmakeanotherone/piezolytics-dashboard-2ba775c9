@@ -729,6 +729,37 @@
   50%     { opacity: 1; }
 }
 
+/* Waiting tile — registered in Tile Manager but no signal yet */
+.iso-block-waiting .iso-top {
+  background: color-mix(in srgb, var(--surf) 65%, transparent) !important;
+  border: 1px dashed color-mix(in srgb, var(--acc) 35%, transparent) !important;
+  box-shadow: none !important;
+}
+.iso-block-waiting .iso-left,
+.iso-block-waiting .iso-right {
+  background: color-mix(in srgb, var(--surf) 50%, transparent) !important;
+  filter: brightness(.7) saturate(.4);
+}
+.iso-block-waiting { filter: grayscale(.7) brightness(.85); }
+.iso-block-waiting:hover { filter: grayscale(.4) brightness(1); }
+.iso-side-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 10px/1 Inter, system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.iso-await-dot {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--text3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text3) 18%, transparent);
+  animation: iso-await-pulse 1.6s ease-in-out infinite;
+}
+.iso-tag-waiting { opacity: .7; }
+.iso-tag-waiting .iso-tag-count { color: var(--text3); }
+
 /* ---- Tile detail charts ---- */
 .iso-detail-charts {
   margin-top: 18px;
