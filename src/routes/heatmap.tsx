@@ -1,18 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { type CSSProperties, useMemo, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useUserTiles } from "@/hooks/use-user-tiles";
 import { useRoomLayout } from "@/hooks/use-room-layout";
 import { ZONE_ORDER } from "@/lib/floor-data";
-import { OUTLINE_COLS, OUTLINE_ROWS, OUTLINE_DEFS, type OutlineElement } from "@/components/OutlineBuilder";
-import { Link } from "@tanstack/react-router";
+import {
+  OUTLINE_COLS,
+  OUTLINE_ROWS,
+  OUTLINE_DEFS,
+  type OutlineElement,
+} from "@/components/OutlineBuilder";
 
 export const Route = createFileRoute("/heatmap")({
   head: () => ({
     meta: [
       { title: "Heat Map — Piezolytics" },
-      { name: "description", content: "Visit intensity heat map across your room layout." },
+      { name: "description", content: "Visit intensity over your placed sensor tiles." },
     ],
   }),
   component: HeatMapPage,
@@ -33,13 +37,12 @@ function rangeStart(range: RangeKey): number {
   }
 }
 
-// Returns rgb triplet for the heat scale at t in [0,1]
+// Heat scale: cool yellow → orange → red (hottest).
 function heatRGB(t: number): [number, number, number] {
   const stops: { p: number; c: [number, number, number] }[] = [
-    { p: 0.0,  c: [80, 200, 120] },   // green (cool)
-    { p: 0.4,  c: [255, 220, 80] },   // yellow
-    { p: 0.7,  c: [255, 140, 40] },   // orange
-    { p: 1.0,  c: [230, 40, 30] },    // red (hot)
+    { p: 0.0, c: [255, 235, 130] }, // pale yellow
+    { p: 0.5, c: [255, 150, 50] },  // orange
+    { p: 1.0, c: [220, 30, 25] },   // red
   ];
   const tt = Math.max(0, Math.min(1, t));
   let a = stops[0], b = stops[stops.length - 1];
@@ -57,7 +60,7 @@ const heatColor = (t: number) => { const [r, g, b] = heatRGB(t); return `rgb(${r
 
 function HeatMapPage() {
   const { events, conn, lastUpdate, refresh, clearAll } = useFloorData();
-  const { tiles, loading: tilesLoading } = useUserTiles();
+  const { loading: tilesLoading } = useUserTiles();
   const { elements, loading: layoutLoading } = useRoomLayout();
   const [range, setRange] = useState<RangeKey>("Week");
 
@@ -77,14 +80,45 @@ function HeatMapPage() {
   const tileEls = elements.filter((e) => e.type === "tile" && e.tileNumber != null);
   const maxCount = Math.max(1, ...tileEls.map((e) => counts.get(e.tileNumber!) ?? 0));
 
-  // Render element outlines + labels in a clean neutral style (like the reference).
   const renderEl = (el: OutlineElement) => {
     const def = OUTLINE_DEFS.find((d) => d.type === el.type)!;
     const Icon = def.icon;
-    const isTile = el.type === "tile" && el.tileNumber != null;
-    const isStructural = el.type === "wall" || el.type === "door";
-    const labelText = isTile ? `#${el.tileNumber}` : el.name;
     const minDim = Math.min(el.w, el.h);
+    const iconSize = Math.max(10, Math.min(16, minDim * 8 + 4));
+    const fontSize = Math.max(7, Math.min(10, minDim * 4 + 6));
+    const isTile = el.type === "tile" && el.tileNumber != null;
+
+    let bg: string;
+    let border: string;
+    let iconColor = "var(--acc)";
+    let textColor: string = "var(--text)";
+
+    if (isTile) {
+      const c = counts.get(el.tileNumber!) ?? 0;
+      const t = c / maxCount;
+      if (c <= 0) {
+        // Cold / no visits — faint surface
+        bg = "color-mix(in srgb, var(--text3) 12%, var(--surf2))";
+        border = "1.5px solid color-mix(in srgb, var(--bord2) 80%, transparent)";
+        iconColor = "var(--text3)";
+        textColor = "var(--text2)";
+      } else {
+        const [r, g, b] = heatRGB(t);
+        bg = `rgb(${r}, ${g}, ${b})`;
+        border = `1.5px solid rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 1)`;
+        // Darken text for legibility on warm fills
+        iconColor = "rgba(0,0,0,0.85)";
+        textColor = "rgba(0,0,0,0.9)";
+      }
+    } else {
+      // Non-tile elements: use the same look as the Outline Builder.
+      bg = `color-mix(in srgb, var(--acc) ${def.tint * 100}%, var(--surf2))`;
+      border = `1.5px solid color-mix(in srgb, var(--acc) ${Math.min(90, def.tint * 100 + 30)}%, var(--bord2))`;
+    }
+
+    const labelText = isTile ? `#${el.tileNumber}` : el.name;
+    const visitText = isTile ? (counts.get(el.tileNumber!) ?? 0) : null;
+
     return (
       <div
         key={el.id}
@@ -94,60 +128,31 @@ function HeatMapPage() {
           top: `${(el.y / OUTLINE_ROWS) * 100}%`,
           width: `${(el.w / OUTLINE_COLS) * 100}%`,
           height: `${(el.h / OUTLINE_ROWS) * 100}%`,
-          background: isStructural
-            ? "color-mix(in srgb, var(--text3) 22%, transparent)"
-            : "transparent",
-          border: `1px solid color-mix(in srgb, var(--bord2) ${isStructural ? 90 : 60}%, transparent)`,
-          color: "var(--text2)",
-          borderRadius: 3,
-          zIndex: 2,
+          background: bg,
+          border,
+          borderRadius: 4,
+          zIndex: 1,
         }}
-        title={isTile ? `Tile #${el.tileNumber}: ${counts.get(el.tileNumber!) ?? 0} visits` : el.name}
+        title={isTile ? `Tile #${el.tileNumber}: ${visitText} visits` : el.name}
       >
-        <div className="flex items-center gap-1 pointer-events-none px-1 max-w-full overflow-hidden">
-          <Icon size={Math.max(9, Math.min(13, minDim * 6 + 4))} style={{ color: "var(--text3)", flexShrink: 0 }} />
+        <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none px-0.5 w-full overflow-hidden">
+          <Icon size={iconSize} style={{ color: iconColor, opacity: 0.95 }} />
           <span
-            className="font-medium truncate leading-none"
-            style={{
-              fontSize: Math.max(8, Math.min(11, minDim * 4 + 7)),
-              color: "var(--text2)",
-            }}
+            className="font-medium truncate max-w-full leading-none"
+            style={{ fontSize, color: textColor }}
           >
             {labelText}
           </span>
+          {isTile && visitText! > 0 && (
+            <span
+              className="font-mono leading-none"
+              style={{ fontSize: Math.max(6, fontSize - 2), color: textColor, opacity: 0.85 }}
+            >
+              {visitText}
+            </span>
+          )}
         </div>
       </div>
-    );
-  };
-
-  // Render a soft radial bloom centered on the tile, sized relative to intensity.
-  const renderHeatBlob = (el: OutlineElement) => {
-    if (el.type !== "tile" || el.tileNumber == null) return null;
-    const c = counts.get(el.tileNumber) ?? 0;
-    if (c <= 0) return null;
-    const t = c / maxCount;
-    const [r, g, b] = heatRGB(t);
-    // Bloom radius: scale with intensity. Express as a multiple of one cell.
-    const radiusCells = 2 + t * 4; // 2 → 6 cells
-    const wPct = (radiusCells * 2 / OUTLINE_COLS) * 100;
-    const hPct = (radiusCells * 2 / OUTLINE_ROWS) * 100;
-    const cxPct = ((el.x + el.w / 2) / OUTLINE_COLS) * 100;
-    const cyPct = ((el.y + el.h / 2) / OUTLINE_ROWS) * 100;
-    return (
-      <div
-        key={`blob_${el.id}`}
-        className="absolute pointer-events-none"
-        style={{
-          left: `calc(${cxPct}% - ${wPct / 2}%)`,
-          top: `calc(${cyPct}% - ${hPct / 2}%)`,
-          width: `${wPct}%`,
-          height: `${hPct}%`,
-          background: `radial-gradient(circle, rgba(${r},${g},${b},${0.55 + t * 0.3}) 0%, rgba(${r},${g},${b},${0.35 + t * 0.2}) 25%, rgba(${r},${g},${b},0.12) 55%, rgba(${r},${g},${b},0) 75%)`,
-          filter: "blur(6px)",
-          mixBlendMode: "screen",
-          zIndex: 1,
-        }}
-      />
     );
   };
 
@@ -161,10 +166,13 @@ function HeatMapPage() {
               Heat Map
             </h1>
             <p className="text-text3 text-sm mt-1">
-              Soft heat blooms over your layout — red is hottest, green is calm.
+              Same layout you built — sensor tiles colored by visit intensity. Red is hottest.
             </p>
           </div>
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--surf2)", border: "1px solid var(--bord2)" }}>
+          <div
+            className="flex gap-1 p-1 rounded-xl"
+            style={{ background: "var(--surf2)", border: "1px solid var(--bord2)" }}
+          >
             {RANGES.map((r) => (
               <button
                 key={r}
@@ -189,7 +197,11 @@ function HeatMapPage() {
             <div className="text-text3 text-sm mb-4">
               Build your room in Outline Builder and place tiles to see them light up here.
             </div>
-            <Link to="/outline" className="inline-block px-4 py-2 rounded-md text-sm" style={{ background: "var(--acc)", color: "var(--bg)" }}>
+            <Link
+              to="/outline"
+              className="inline-block px-4 py-2 rounded-md text-sm"
+              style={{ background: "var(--acc)", color: "var(--bg)" }}
+            >
               Open Outline Builder
             </Link>
           </div>
@@ -203,7 +215,7 @@ function HeatMapPage() {
                 border: "1px solid var(--bord2)",
               }}
             >
-              {/* Faint grid */}
+              {/* Faint grid — matches the Outline Builder */}
               <div
                 className="absolute inset-0 grid"
                 style={{
@@ -216,27 +228,24 @@ function HeatMapPage() {
                   <div
                     key={i}
                     style={{
-                      borderRight: "1px solid color-mix(in srgb, var(--bord2) 25%, transparent)",
-                      borderBottom: "1px solid color-mix(in srgb, var(--bord2) 25%, transparent)",
+                      borderRight: "1px solid color-mix(in srgb, var(--bord2) 40%, transparent)",
+                      borderBottom: "1px solid color-mix(in srgb, var(--bord2) 40%, transparent)",
                     }}
                   />
                 ))}
               </div>
-              {/* Heat blobs (under labels) */}
-              {elements.map(renderHeatBlob)}
-              {/* Element outlines + labels */}
               {elements.map(renderEl)}
             </div>
 
             {/* Legend */}
             <div className="flex items-center gap-3 mt-4">
-              <span className="text-text3 text-xs">Calm</span>
+              <span className="text-text3 text-xs">Less</span>
               <div className="flex-1 h-3 rounded-full overflow-hidden flex">
                 {Array.from({ length: 40 }).map((_, i) => (
                   <span key={i} style={{ flex: 1, background: heatColor(i / 39) } as CSSProperties} />
                 ))}
               </div>
-              <span className="text-text3 text-xs">Hot</span>
+              <span className="text-text3 text-xs">More visits</span>
               <span className="text-text3 text-xs font-mono ml-2">peak {maxCount}</span>
             </div>
           </div>
