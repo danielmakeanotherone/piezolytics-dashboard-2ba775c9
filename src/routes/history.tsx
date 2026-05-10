@@ -158,26 +158,19 @@ function HistoryPage() {
                     const key = dayKey(e.epoch);
                     if (key !== lastKey) {
                       lastKey = key;
-                      const isoDate = new Date(e.epoch).toISOString().slice(0, 10);
                       out.push(
-                        <Link
+                        <div
                           key={`hdr_${key}`}
-                          to="/heatmap"
-                          search={{ date: isoDate, range: "Day" }}
-                          className="flex items-center justify-between gap-2 px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10 hover:opacity-90 transition-opacity"
+                          className="px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10"
                           style={{
                             color: "var(--acc)",
                             background: "var(--surf2)",
                             borderBottom: "1px solid var(--bord2)",
                             borderTop: out.length ? "1px solid var(--bord2)" : undefined,
                           }}
-                          title="View this day's heat map"
                         >
-                          <span>{dayLabel(e.epoch)}</span>
-                          <span className="text-text3 normal-case tracking-normal text-[10px]">
-                            View heat map →
-                          </span>
-                        </Link>,
+                          {dayLabel(e.epoch)}
+                        </div>,
                       );
                     }
                     const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
