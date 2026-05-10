@@ -232,6 +232,62 @@ function HeatMapPage() {
           </div>
         </div>
 
+        {/* Date navigator */}
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => shift(-1)}
+              disabled={!canPrev}
+              className="p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              aria-label="Previous period"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <div
+              className="px-3 py-1.5 rounded-md text-xs font-mono"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)", minWidth: 220, textAlign: "center" }}
+            >
+              {formatWindow(range, effectiveAnchor)}
+            </div>
+            <button
+              onClick={() => shift(1)}
+              disabled={!canNext}
+              className="p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              aria-label="Next period"
+            >
+              <ChevronRight size={16} />
+            </button>
+            {range !== "All" && anchor < Date.now() - 1000 && (
+              <button
+                onClick={() => setAnchor(Date.now())}
+                className="px-2 py-1.5 rounded-md text-xs"
+                style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              >
+                Now
+              </button>
+            )}
+          </div>
+          {range !== "All" && (
+            <input
+              type="date"
+              value={new Date(effectiveAnchor).toISOString().slice(0, 10)}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => {
+                const d = new Date(e.target.value);
+                if (!isNaN(d.getTime())) {
+                  // Anchor at end-of-day so the window covers the picked date.
+                  d.setHours(23, 59, 59, 999);
+                  setAnchor(Math.min(Date.now(), d.getTime()));
+                }
+              }}
+              className="px-2 py-1.5 rounded-md text-xs"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)" }}
+            />
+          )}
+        </div>
+
         {layoutLoading || tilesLoading ? (
           <div className="text-text3 text-sm">Loading…</div>
         ) : elements.length === 0 ? (
