@@ -59,7 +59,14 @@ function Wave({ data }: { data: number[] }) {
 }
 
 export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
-  const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
+  const demoData = useFloorData(2000, { demo });
+  const live = useFootTraffic();
+  const events = demo ? demoData.events : live.events;
+  const stats = demo ? demoData.stats : live.stats;
+  const conn = demo ? demoData.conn : live.conn;
+  const lastUpdate = demo ? demoData.lastUpdate : live.lastUpdate;
+  const refresh = demo ? demoData.refresh : live.refresh;
+  const clearAll = demoData.clearAll;
   const { user } = useAuthSession();
   const { tiles } = useUserTiles();
   const demoLabels = ["Front Entrance", "Aisle A", "Checkout", "Aisle B"];
