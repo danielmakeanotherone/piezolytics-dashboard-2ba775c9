@@ -22,10 +22,10 @@ export interface FootTrafficRow {
 }
 
 const TILE_TO_SENSOR: Record<string, SensorKey> = {
-  "1": "entrance",
-  "2": "aisle_a",
-  "3": "checkout",
-  "4": "aisle_b",
+  tile_1: "entrance",
+  tile_2: "aisle_a",
+  tile_3: "checkout",
+  tile_4: "aisle_b",
 };
 
 export function rowToEvent(row: FootTrafficRow): FloorEvent {
