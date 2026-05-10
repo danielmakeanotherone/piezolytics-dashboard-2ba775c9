@@ -12,6 +12,10 @@ import {
 } from "@/components/OutlineBuilder";
 
 export const Route = createFileRoute("/heatmap")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    date: typeof s.date === "string" ? s.date : undefined,
+    range: typeof s.range === "string" ? (s.range as RangeKey) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Heat Map — Piezolytics" },
