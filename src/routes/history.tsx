@@ -88,16 +88,18 @@ function HistoryPage() {
 
   const rows = enriched
     .filter((e) => filter === "all" || e.tileNumber === filter)
+    .filter((e) => e.epoch >= winStart && e.epoch <= winEnd)
     .sort((a, b) => b.epoch - a.epoch);
 
   const perTileCounts = useMemo(() => {
     const counts = new Map<number, number>();
     for (const e of tagged) {
       if (!registeredNums.has(e.tileNumber)) continue;
+      if (e.epoch < winStart || e.epoch > winEnd) continue;
       counts.set(e.tileNumber, (counts.get(e.tileNumber) ?? 0) + 1);
     }
     return counts;
-  }, [tagged, registeredNums]);
+  }, [tagged, registeredNums, winStart, winEnd]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
