@@ -24,16 +24,27 @@ export const Route = createFileRoute("/heatmap")({
 type RangeKey = "Day" | "Week" | "Month" | "Quarter" | "Year" | "All";
 const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
 
-function rangeStart(range: RangeKey): number {
-  const now = Date.now();
-  switch (range) {
-    case "Day": return now - 86400000;
-    case "Week": return now - 7 * 86400000;
-    case "Month": return now - 30 * 86400000;
-    case "Quarter": return now - 91 * 86400000;
-    case "Year": return now - 365 * 86400000;
-    case "All": return 0;
-  }
+const RANGE_MS: Record<Exclude<RangeKey, "All">, number> = {
+  Day: 86400000,
+  Week: 7 * 86400000,
+  Month: 30 * 86400000,
+  Quarter: 91 * 86400000,
+  Year: 365 * 86400000,
+};
+
+function rangeWindow(range: RangeKey, anchor: number): { start: number; end: number } {
+  if (range === "All") return { start: 0, end: Date.now() };
+  const span = RANGE_MS[range];
+  return { start: anchor - span, end: anchor };
+}
+
+function formatWindow(range: RangeKey, anchor: number): string {
+  if (range === "All") return "All time";
+  const { start, end } = rangeWindow(range, anchor);
+  const fmt = (t: number) =>
+    new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (range === "Day") return fmt(end);
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 // Heat scale: cool yellow → orange → red (hottest).
