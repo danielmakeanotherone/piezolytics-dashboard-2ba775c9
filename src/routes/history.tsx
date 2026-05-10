@@ -1,9 +1,33 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useUserTiles } from "@/hooks/use-user-tiles";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
+
+type RangeKey = "Day" | "Week" | "Month" | "Quarter" | "Year" | "All";
+const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
+const RANGE_MS: Record<Exclude<RangeKey, "All">, number> = {
+  Day: 86400000,
+  Week: 7 * 86400000,
+  Month: 30 * 86400000,
+  Quarter: 91 * 86400000,
+  Year: 365 * 86400000,
+};
+function rangeWindow(range: RangeKey, anchor: number): { start: number; end: number } {
+  if (range === "All") return { start: 0, end: Date.now() };
+  const span = RANGE_MS[range];
+  return { start: anchor - span, end: anchor };
+}
+function formatWindow(range: RangeKey, anchor: number): string {
+  if (range === "All") return "All time";
+  const { start, end } = rangeWindow(range, anchor);
+  const fmt = (t: number) =>
+    new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (range === "Day") return fmt(end);
+  return `${fmt(start)} – ${fmt(end)}`;
+}
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -19,6 +43,17 @@ function HistoryPage() {
   const { events, conn, lastUpdate, refresh, clearAll } = useFloorData();
   const { tiles, loading } = useUserTiles();
   const [filter, setFilter] = useState<number | "all">("all");
+  const [range, setRange] = useState<RangeKey>("Week");
+  const [anchor, setAnchor] = useState<number>(() => Date.now());
+  const effectiveAnchor = range === "All" ? Date.now() : anchor;
+  const { start: winStart, end: winEnd } = rangeWindow(range, effectiveAnchor);
+  const span = range === "All" ? 0 : RANGE_MS[range];
+  const canPrev = range !== "All";
+  const canNext = range !== "All" && winEnd < Date.now();
+  const shift = (dir: -1 | 1) => {
+    if (range === "All") return;
+    setAnchor((a) => Math.min(Date.now(), a + dir * span));
+  };
 
   // Map each event's sensor key → tile_# (sensor index in ZONE_ORDER + 1)
   const tagged = useMemo(
@@ -53,16 +88,18 @@ function HistoryPage() {
 
   const rows = enriched
     .filter((e) => filter === "all" || e.tileNumber === filter)
+    .filter((e) => e.epoch >= winStart && e.epoch <= winEnd)
     .sort((a, b) => b.epoch - a.epoch);
 
   const perTileCounts = useMemo(() => {
     const counts = new Map<number, number>();
     for (const e of tagged) {
       if (!registeredNums.has(e.tileNumber)) continue;
+      if (e.epoch < winStart || e.epoch > winEnd) continue;
       counts.set(e.tileNumber, (counts.get(e.tileNumber) ?? 0) + 1);
     }
     return counts;
-  }, [tagged, registeredNums]);
+  }, [tagged, registeredNums, winStart, winEnd]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -96,6 +133,79 @@ function HistoryPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Range + date navigator (mirrors Heat Map) */}
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div
+            className="flex gap-1 p-1 rounded-xl"
+            style={{ background: "var(--surf2)", border: "1px solid var(--bord2)" }}
+          >
+            {RANGES.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className="px-3 py-1.5 rounded-lg text-xs transition-colors"
+                style={{
+                  background: r === range ? "var(--surf3)" : "transparent",
+                  color: r === range ? "var(--acc)" : "var(--text2)",
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => shift(-1)}
+              disabled={!canPrev}
+              className="p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              aria-label="Previous period"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <div
+              className="px-3 py-1.5 rounded-md text-xs font-mono"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)", minWidth: 220, textAlign: "center" }}
+            >
+              {formatWindow(range, effectiveAnchor)}
+            </div>
+            <button
+              onClick={() => shift(1)}
+              disabled={!canNext}
+              className="p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              aria-label="Next period"
+            >
+              <ChevronRight size={16} />
+            </button>
+            {range !== "All" && anchor < Date.now() - 1000 && (
+              <button
+                onClick={() => setAnchor(Date.now())}
+                className="px-2 py-1.5 rounded-md text-xs"
+                style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              >
+                Now
+              </button>
+            )}
+            {range !== "All" && (
+              <input
+                type="date"
+                value={new Date(effectiveAnchor).toISOString().slice(0, 10)}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => {
+                  const d = new Date(e.target.value);
+                  if (!isNaN(d.getTime())) {
+                    d.setHours(23, 59, 59, 999);
+                    setAnchor(Math.min(Date.now(), d.getTime()));
+                  }
+                }}
+                className="px-2 py-1.5 rounded-md text-xs"
+                style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)" }}
+              />
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -158,26 +268,19 @@ function HistoryPage() {
                     const key = dayKey(e.epoch);
                     if (key !== lastKey) {
                       lastKey = key;
-                      const isoDate = new Date(e.epoch).toISOString().slice(0, 10);
                       out.push(
-                        <Link
+                        <div
                           key={`hdr_${key}`}
-                          to="/heatmap"
-                          search={{ date: isoDate, range: "Day" }}
-                          className="flex items-center justify-between gap-2 px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10 hover:opacity-90 transition-opacity"
+                          className="px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10"
                           style={{
                             color: "var(--acc)",
                             background: "var(--surf2)",
                             borderBottom: "1px solid var(--bord2)",
                             borderTop: out.length ? "1px solid var(--bord2)" : undefined,
                           }}
-                          title="View this day's heat map"
                         >
-                          <span>{dayLabel(e.epoch)}</span>
-                          <span className="text-text3 normal-case tracking-normal text-[10px]">
-                            View heat map →
-                          </span>
-                        </Link>,
+                          {dayLabel(e.epoch)}
+                        </div>,
                       );
                     }
                     const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
