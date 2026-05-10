@@ -151,48 +151,71 @@ function HistoryPage() {
                     No events recorded for this selection yet.
                   </div>
                 )}
-                {rows.map((e, i) => {
-                  const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
-                  return (
-                    <div
-                      key={`${e.epoch}-${i}`}
-                      className="grid items-center px-3 py-2 text-sm"
-                      style={{ gridTemplateColumns: "180px 1.4fr 110px 120px", borderBottom: "1px solid rgba(74,60,42,.4)" }}
-                    >
-                      <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
-                      <div className="text-text truncate">
-                        <span className="text-text2">{tileLabel}</span>
-                        {e.direction && (
-                          <span
-                            className="ml-2 inline-block px-2 py-0.5 rounded font-mono text-[11px]"
-                            style={{
-                              background: "rgba(200,168,118,0.10)",
-                              color: "var(--acc)",
-                              border: "1px solid rgba(200,168,118,0.20)",
-                            }}
-                          >
-                            {e.direction === "A→B" ? "A → B" : "B → A"}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-text2 font-mono text-[12px]">
-                        {e.dwellMs != null ? formatDuration(e.dwellMs) : "—"}
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className="inline-block px-2.5 py-0.5 rounded-md font-mono text-[12px]"
+                {(() => {
+                  const out: React.ReactNode[] = [];
+                  let lastKey = "";
+                  rows.forEach((e, i) => {
+                    const key = dayKey(e.epoch);
+                    if (key !== lastKey) {
+                      lastKey = key;
+                      out.push(
+                        <div
+                          key={`hdr_${key}`}
+                          className="px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10"
                           style={{
-                            background: "rgba(200,168,118,0.12)",
                             color: "var(--acc)",
-                            border: "1px solid rgba(200,168,118,0.22)",
+                            background: "var(--surf2)",
+                            borderBottom: "1px solid var(--bord2)",
+                            borderTop: out.length ? "1px solid var(--bord2)" : undefined,
                           }}
                         >
-                          {e.value}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                          {dayLabel(e.epoch)}
+                        </div>,
+                      );
+                    }
+                    const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
+                    out.push(
+                      <div
+                        key={`${e.epoch}-${i}`}
+                        className="grid items-center px-3 py-2 text-sm"
+                        style={{ gridTemplateColumns: "180px 1.4fr 110px 120px", borderBottom: "1px solid rgba(74,60,42,.4)" }}
+                      >
+                        <div className="text-text2 font-mono text-[12px]">{formatTime(e.epoch)}</div>
+                        <div className="text-text truncate">
+                          <span className="text-text2">{tileLabel}</span>
+                          {e.direction && (
+                            <span
+                              className="ml-2 inline-block px-2 py-0.5 rounded font-mono text-[11px]"
+                              style={{
+                                background: "rgba(200,168,118,0.10)",
+                                color: "var(--acc)",
+                                border: "1px solid rgba(200,168,118,0.20)",
+                              }}
+                            >
+                              {e.direction === "A→B" ? "A → B" : "B → A"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-text2 font-mono text-[12px]">
+                          {e.dwellMs != null ? formatDuration(e.dwellMs) : "—"}
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className="inline-block px-2.5 py-0.5 rounded-md font-mono text-[12px]"
+                            style={{
+                              background: "rgba(200,168,118,0.12)",
+                              color: "var(--acc)",
+                              border: "1px solid rgba(200,168,118,0.22)",
+                            }}
+                          >
+                            {e.value}
+                          </span>
+                        </div>
+                      </div>,
+                    );
+                  });
+                  return out;
+                })()}
               </div>
             </div>
           </>
@@ -212,6 +235,27 @@ function formatDuration(ms: number): string {
   const h = Math.floor(m / 60);
   const rm = m % 60;
   return rm ? `${h}h ${rm}m` : `${h}h`;
+}
+
+function dayKey(epoch: number): string {
+  const d = new Date(epoch);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function dayLabel(epoch: number): string {
+  const d = new Date(epoch);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const that = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((today.getTime() - that.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: now.getFullYear() === d.getFullYear() ? undefined : "numeric",
+  });
 }
 
 function FilterBtn({
