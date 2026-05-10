@@ -2,7 +2,9 @@ import { NavBar } from "@/components/NavBar";
 import { HeroStats } from "@/components/HeroStats";
 import { IsoHeatmap } from "@/components/IsoHeatmap";
 import { Sparkline } from "@/components/Sparkline";
+import { FootTrafficTable } from "@/components/FootTrafficTable";
 import { useFloorData } from "@/hooks/use-floor-data";
+import { useFootTraffic } from "@/hooks/use-foot-traffic";
 import { useAuthSession } from "@/hooks/use-auth";
 import { useUserTiles } from "@/hooks/use-user-tiles";
 import { bucketSparkline, ZONE_LABELS, ZONE_ORDER, formatTime } from "@/lib/floor-data";
@@ -57,7 +59,14 @@ function Wave({ data }: { data: number[] }) {
 }
 
 export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: boolean; hideNav?: boolean; onLogout?: () => void }) {
-  const { events, stats, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo });
+  const demoData = useFloorData(2000, { demo });
+  const live = useFootTraffic();
+  const events = demo ? demoData.events : live.events;
+  const stats = demo ? demoData.stats : live.stats;
+  const conn = demo ? demoData.conn : live.conn;
+  const lastUpdate = demo ? demoData.lastUpdate : live.lastUpdate;
+  const refresh = demo ? demoData.refresh : live.refresh;
+  const clearAll = demoData.clearAll;
   const { user } = useAuthSession();
   const { tiles } = useUserTiles();
   const demoLabels = ["Front Entrance", "Aisle A", "Checkout", "Aisle B"];
@@ -239,6 +248,8 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
             </div>
           </aside>
         </div>
+
+        {!demo && <FootTrafficTable rows={live.rows} />}
       </main>
     </div>
   );
