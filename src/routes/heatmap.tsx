@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type CSSProperties, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useUserTiles } from "@/hooks/use-user-tiles";
@@ -23,16 +24,27 @@ export const Route = createFileRoute("/heatmap")({
 type RangeKey = "Day" | "Week" | "Month" | "Quarter" | "Year" | "All";
 const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
 
-function rangeStart(range: RangeKey): number {
-  const now = Date.now();
-  switch (range) {
-    case "Day": return now - 86400000;
-    case "Week": return now - 7 * 86400000;
-    case "Month": return now - 30 * 86400000;
-    case "Quarter": return now - 91 * 86400000;
-    case "Year": return now - 365 * 86400000;
-    case "All": return 0;
-  }
+const RANGE_MS: Record<Exclude<RangeKey, "All">, number> = {
+  Day: 86400000,
+  Week: 7 * 86400000,
+  Month: 30 * 86400000,
+  Quarter: 91 * 86400000,
+  Year: 365 * 86400000,
+};
+
+function rangeWindow(range: RangeKey, anchor: number): { start: number; end: number } {
+  if (range === "All") return { start: 0, end: Date.now() };
+  const span = RANGE_MS[range];
+  return { start: anchor - span, end: anchor };
+}
+
+function formatWindow(range: RangeKey, anchor: number): string {
+  if (range === "All") return "All time";
+  const { start, end } = rangeWindow(range, anchor);
+  const fmt = (t: number) =>
+    new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (range === "Day") return fmt(end);
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 // Heat scale: cool yellow → orange → red (hottest).
@@ -61,19 +73,39 @@ function HeatMapPage() {
   const { loading: tilesLoading } = useUserTiles();
   const { elements, cols: OUTLINE_COLS, rows: OUTLINE_ROWS, loading: layoutLoading } = useRoomLayout();
   const [range, setRange] = useState<RangeKey>("Week");
+  const [anchor, setAnchor] = useState<number>(() => Date.now());
+
+  // Reset anchor to now whenever range changes (and clamp All to now).
+  const effectiveAnchor = range === "All" ? Date.now() : anchor;
+  const { start, end } = rangeWindow(range, effectiveAnchor);
 
   const counts = useMemo(() => {
-    const start = rangeStart(range);
     const map = new Map<number, number>();
     for (const e of events) {
-      if (e.epoch < start) continue;
+      if (e.epoch < start || e.epoch > end) continue;
       const idx = ZONE_ORDER.indexOf(e.sensor);
       const tn = idx >= 0 ? idx + 1 : -1;
       if (tn < 0) continue;
       map.set(tn, (map.get(tn) ?? 0) + 1);
     }
     return map;
-  }, [events, range]);
+  }, [events, start, end]);
+
+  // Bounds for navigation — based on actual event timestamps.
+  const dataBounds = useMemo(() => {
+    if (events.length === 0) return { min: 0, max: Date.now() };
+    let min = Infinity, max = -Infinity;
+    for (const e of events) { if (e.epoch < min) min = e.epoch; if (e.epoch > max) max = e.epoch; }
+    return { min, max };
+  }, [events]);
+
+  const span = range === "All" ? 0 : RANGE_MS[range];
+  const canPrev = range !== "All" && start - span >= dataBounds.min - span;
+  const canNext = range !== "All" && end < Date.now();
+  const shift = (dir: -1 | 1) => {
+    if (range === "All") return;
+    setAnchor((a) => Math.min(Date.now(), a + dir * span));
+  };
 
   const tileEls = elements.filter((e) => e.type === "tile" && e.tileNumber != null);
   const maxCount = Math.max(1, ...tileEls.map((e) => counts.get(e.tileNumber!) ?? 0));
@@ -198,6 +230,62 @@ function HeatMapPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Date navigator */}
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => shift(-1)}
+              disabled={!canPrev}
+              className="p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              aria-label="Previous period"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <div
+              className="px-3 py-1.5 rounded-md text-xs font-mono"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)", minWidth: 220, textAlign: "center" }}
+            >
+              {formatWindow(range, effectiveAnchor)}
+            </div>
+            <button
+              onClick={() => shift(1)}
+              disabled={!canNext}
+              className="p-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              aria-label="Next period"
+            >
+              <ChevronRight size={16} />
+            </button>
+            {range !== "All" && anchor < Date.now() - 1000 && (
+              <button
+                onClick={() => setAnchor(Date.now())}
+                className="px-2 py-1.5 rounded-md text-xs"
+                style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text2)" }}
+              >
+                Now
+              </button>
+            )}
+          </div>
+          {range !== "All" && (
+            <input
+              type="date"
+              value={new Date(effectiveAnchor).toISOString().slice(0, 10)}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => {
+                const d = new Date(e.target.value);
+                if (!isNaN(d.getTime())) {
+                  // Anchor at end-of-day so the window covers the picked date.
+                  d.setHours(23, 59, 59, 999);
+                  setAnchor(Math.min(Date.now(), d.getTime()));
+                }
+              }}
+              className="px-2 py-1.5 rounded-md text-xs"
+              style={{ background: "var(--surf2)", border: "1px solid var(--bord2)", color: "var(--text)" }}
+            />
+          )}
         </div>
 
         {layoutLoading || tilesLoading ? (
