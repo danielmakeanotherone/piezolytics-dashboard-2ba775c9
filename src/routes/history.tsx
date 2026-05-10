@@ -237,6 +237,27 @@ function formatDuration(ms: number): string {
   return rm ? `${h}h ${rm}m` : `${h}h`;
 }
 
+function dayKey(epoch: number): string {
+  const d = new Date(epoch);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function dayLabel(epoch: number): string {
+  const d = new Date(epoch);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const that = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((today.getTime() - that.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: now.getFullYear() === d.getFullYear() ? undefined : "numeric",
+  });
+}
+
 function FilterBtn({
   active,
   onClick,
