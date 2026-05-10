@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type CSSProperties, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useUserTiles } from "@/hooks/use-user-tiles";
