@@ -248,6 +248,8 @@ export function Dashboard({ demo = false, hideNav = false, onLogout }: { demo?: 
             </div>
           </aside>
         </div>
+
+        {!demo && <FootTrafficTable rows={live.rows} />}
       </main>
     </div>
   );
