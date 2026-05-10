@@ -43,6 +43,17 @@ function HistoryPage() {
   const { events, conn, lastUpdate, refresh, clearAll } = useFloorData();
   const { tiles, loading } = useUserTiles();
   const [filter, setFilter] = useState<number | "all">("all");
+  const [range, setRange] = useState<RangeKey>("Week");
+  const [anchor, setAnchor] = useState<number>(() => Date.now());
+  const effectiveAnchor = range === "All" ? Date.now() : anchor;
+  const { start: winStart, end: winEnd } = rangeWindow(range, effectiveAnchor);
+  const span = range === "All" ? 0 : RANGE_MS[range];
+  const canPrev = range !== "All";
+  const canNext = range !== "All" && winEnd < Date.now();
+  const shift = (dir: -1 | 1) => {
+    if (range === "All") return;
+    setAnchor((a) => Math.min(Date.now(), a + dir * span));
+  };
 
   // Map each event's sensor key → tile_# (sensor index in ZONE_ORDER + 1)
   const tagged = useMemo(
