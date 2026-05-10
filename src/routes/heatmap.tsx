@@ -69,7 +69,7 @@ function heatRGB(t: number): [number, number, number] {
 const heatColor = (t: number) => { const [r, g, b] = heatRGB(t); return `rgb(${r}, ${g}, ${b})`; };
 
 function HeatMapPage() {
-  const { events, conn, lastUpdate, refresh, clearAll } = useFloorData(2000, { demo: true });
+  const { events, conn, lastUpdate, refresh, clearAll } = useFloorData(2000);
   const { loading: tilesLoading } = useUserTiles();
   const { elements, cols: OUTLINE_COLS, rows: OUTLINE_ROWS, loading: layoutLoading } = useRoomLayout();
   const [range, setRange] = useState<RangeKey>("Week");
