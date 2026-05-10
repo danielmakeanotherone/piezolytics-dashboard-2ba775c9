@@ -73,19 +73,39 @@ function HeatMapPage() {
   const { loading: tilesLoading } = useUserTiles();
   const { elements, cols: OUTLINE_COLS, rows: OUTLINE_ROWS, loading: layoutLoading } = useRoomLayout();
   const [range, setRange] = useState<RangeKey>("Week");
+  const [anchor, setAnchor] = useState<number>(() => Date.now());
+
+  // Reset anchor to now whenever range changes (and clamp All to now).
+  const effectiveAnchor = range === "All" ? Date.now() : anchor;
+  const { start, end } = rangeWindow(range, effectiveAnchor);
 
   const counts = useMemo(() => {
-    const start = rangeStart(range);
     const map = new Map<number, number>();
     for (const e of events) {
-      if (e.epoch < start) continue;
+      if (e.epoch < start || e.epoch > end) continue;
       const idx = ZONE_ORDER.indexOf(e.sensor);
       const tn = idx >= 0 ? idx + 1 : -1;
       if (tn < 0) continue;
       map.set(tn, (map.get(tn) ?? 0) + 1);
     }
     return map;
-  }, [events, range]);
+  }, [events, start, end]);
+
+  // Bounds for navigation — based on actual event timestamps.
+  const dataBounds = useMemo(() => {
+    if (events.length === 0) return { min: 0, max: Date.now() };
+    let min = Infinity, max = -Infinity;
+    for (const e of events) { if (e.epoch < min) min = e.epoch; if (e.epoch > max) max = e.epoch; }
+    return { min, max };
+  }, [events]);
+
+  const span = range === "All" ? 0 : RANGE_MS[range];
+  const canPrev = range !== "All" && start - span >= dataBounds.min - span;
+  const canNext = range !== "All" && end < Date.now();
+  const shift = (dir: -1 | 1) => {
+    if (range === "All") return;
+    setAnchor((a) => Math.min(Date.now(), a + dir * span));
+  };
 
   const tileEls = elements.filter((e) => e.type === "tile" && e.tileNumber != null);
   const maxCount = Math.max(1, ...tileEls.map((e) => counts.get(e.tileNumber!) ?? 0));
