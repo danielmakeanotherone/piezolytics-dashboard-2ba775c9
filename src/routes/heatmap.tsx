@@ -76,8 +76,19 @@ function HeatMapPage() {
   const { events, conn, lastUpdate, refresh, clearAll } = useFloorData(2000);
   const { loading: tilesLoading } = useUserTiles();
   const { elements, cols: OUTLINE_COLS, rows: OUTLINE_ROWS, loading: layoutLoading } = useRoomLayout();
-  const [range, setRange] = useState<RangeKey>("Week");
-  const [anchor, setAnchor] = useState<number>(() => Date.now());
+  const search = Route.useSearch();
+  const initialAnchor = useMemo(() => {
+    if (search.date) {
+      const d = new Date(search.date);
+      if (!isNaN(d.getTime())) {
+        d.setHours(23, 59, 59, 999);
+        return Math.min(Date.now(), d.getTime());
+      }
+    }
+    return Date.now();
+  }, [search.date]);
+  const [range, setRange] = useState<RangeKey>(search.range ?? "Week");
+  const [anchor, setAnchor] = useState<number>(initialAnchor);
 
   // Reset anchor to now whenever range changes (and clamp All to now).
   const effectiveAnchor = range === "All" ? Date.now() : anchor;
