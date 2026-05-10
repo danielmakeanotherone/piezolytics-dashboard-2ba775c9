@@ -1,9 +1,33 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
 import { useUserTiles } from "@/hooks/use-user-tiles";
 import { ZONE_ORDER, formatTime } from "@/lib/floor-data";
+
+type RangeKey = "Day" | "Week" | "Month" | "Quarter" | "Year" | "All";
+const RANGES: RangeKey[] = ["Day", "Week", "Month", "Quarter", "Year", "All"];
+const RANGE_MS: Record<Exclude<RangeKey, "All">, number> = {
+  Day: 86400000,
+  Week: 7 * 86400000,
+  Month: 30 * 86400000,
+  Quarter: 91 * 86400000,
+  Year: 365 * 86400000,
+};
+function rangeWindow(range: RangeKey, anchor: number): { start: number; end: number } {
+  if (range === "All") return { start: 0, end: Date.now() };
+  const span = RANGE_MS[range];
+  return { start: anchor - span, end: anchor };
+}
+function formatWindow(range: RangeKey, anchor: number): string {
+  if (range === "All") return "All time";
+  const { start, end } = rangeWindow(range, anchor);
+  const fmt = (t: number) =>
+    new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (range === "Day") return fmt(end);
+  return `${fmt(start)} – ${fmt(end)}`;
+}
 
 export const Route = createFileRoute("/history")({
   head: () => ({
