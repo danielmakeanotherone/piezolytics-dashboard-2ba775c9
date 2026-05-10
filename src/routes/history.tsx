@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { NavBar } from "@/components/NavBar";
 import { useFloorData } from "@/hooks/use-floor-data";
@@ -158,19 +158,26 @@ function HistoryPage() {
                     const key = dayKey(e.epoch);
                     if (key !== lastKey) {
                       lastKey = key;
+                      const isoDate = new Date(e.epoch).toISOString().slice(0, 10);
                       out.push(
-                        <div
+                        <Link
                           key={`hdr_${key}`}
-                          className="px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10"
+                          to="/heatmap"
+                          search={{ date: isoDate, range: "Day" }}
+                          className="flex items-center justify-between gap-2 px-3 py-2 text-[11px] uppercase tracking-wider sticky top-0 z-10 hover:opacity-90 transition-opacity"
                           style={{
                             color: "var(--acc)",
                             background: "var(--surf2)",
                             borderBottom: "1px solid var(--bord2)",
                             borderTop: out.length ? "1px solid var(--bord2)" : undefined,
                           }}
+                          title="View this day's heat map"
                         >
-                          {dayLabel(e.epoch)}
-                        </div>,
+                          <span>{dayLabel(e.epoch)}</span>
+                          <span className="text-text3 normal-case tracking-normal text-[10px]">
+                            View heat map →
+                          </span>
+                        </Link>,
                       );
                     }
                     const tileLabel = labelByNum.get(e.tileNumber) ?? `Tile ${e.tileNumber}`;
